@@ -146,8 +146,18 @@ it.each(["string:key", ":", "string"])(
 it.each([
   ["bogus:key:value", "invalid_request"],
   ["string:key:value", "capability_unavailable"],
+  ["string:key:", "capability_unavailable"],
+  ["int:key:-3", "capability_unavailable"],
+  ["long:key:9007199254740993", "capability_unavailable"],
+  ["float:key:-1.5", "capability_unavailable"],
+  ["boolean:key:false", "capability_unavailable"],
+  ["int:key:", "invalid_request"],
+  ["int:key:abc", "invalid_request"],
+  ["long:key:1.5", "invalid_request"],
+  ["float:key:1e3", "invalid_request"],
+  ["boolean:key:yes", "invalid_request"],
 ] as const)(
-  "preserves downstream validation for well-delimited activity extra %j",
+  "admits well-delimited activity extra %j by its typed value form",
   async (extra, code) => {
     const result = await serve(
       [

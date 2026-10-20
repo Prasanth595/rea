@@ -1834,6 +1834,7 @@ ${shellStub({ "am:start": "Starting: Intent { act=android.intent.action.VIEW dat
       extras: [
         { key: "level", type: "int", value: "3" },
         { key: "label", type: "string", value: "probe" },
+        { key: "empty", type: "string", value: "" },
       ],
     },
   });
@@ -1859,23 +1860,10 @@ ${shellStub({ "am:start": "Starting: Intent { act=android.intent.action.VIEW dat
     "--es",
     "label",
     "probe",
+    "--es",
+    "empty",
+    "''",
   ]);
-});
-
-it("rejects mistyped intent extras before touching the device", async () => {
-  const { binary } = await writeAdbStub(
-    () => `if [ "$1" = "version" ]; then ${VERSION_BLOCK}; exit 0; fi
-: > should-not-exist`,
-  );
-  const projected = await refusedBy(providerOver(binary), {
-    operation: "start_adb_activity",
-    input: {
-      serial: "emulator-5554",
-      action: "com.example.ACTION",
-      extras: [{ key: "flag", type: "boolean", value: "yes" }],
-    },
-  });
-  expect(projected).toMatchObject({ code: "invalid_request" });
 });
 
 it("collects a device bugreport archive with its digest", async () => {

@@ -53,6 +53,30 @@ const keyStringSchema = z.string().min(1).max(256);
 const keyPattern = /^[A-Za-z0-9._\x2d]+$/u;
 
 /**
+ * Text forms `am start` parses for typed extras. String extras pass through
+ * `--es` unchanged, so a present empty string stays distinct from absence.
+ */
+const extraValueFormats: Partial<
+  Record<
+    "string" | "boolean" | "int" | "long" | "float",
+    {
+      readonly pattern: RegExp;
+      readonly label: string;
+      readonly expected: string;
+    }
+  >
+> = {
+  boolean: {
+    pattern: /^(true|false)$/u,
+    label: "Boolean",
+    expected: "true or false",
+  },
+  int: { pattern: /^-?\d+$/u, label: "Integer", expected: "an integer" },
+  long: { pattern: /^-?\d+$/u, label: "Long", expected: "an integer" },
+  float: { pattern: /^-?\d+(\.\d+)?$/u, label: "Float", expected: "a number" },
+};
+
+/**
  * Caller intent for ADB-backed device inspection and acquisition.
  *
  * REA never installs platform tools, starts an emulator, or manages devices;
@@ -283,20 +307,31 @@ export const adbInputSchemas = {
       .describe("Explicit component to start (-n)"),
     extras: z
       .array(
-        z.strictObject({
-          key: keyStringSchema
-            .regex(keyPattern, "Extra keys are identifiers")
-            .describe("Extra key"),
-          type: z
-            .enum(["string", "boolean", "int", "long", "float"])
-            .describe("Extra value type"),
-          value: z
-            .string()
-            .min(1)
-            .max(2048)
-            .regex(/^[^\x00]*$/u, "Extra values cannot contain NUL")
-            .describe("Extra value as text, parsed per type"),
-        }),
+        z
+          .strictObject({
+            key: keyStringSchema
+              .regex(keyPattern, "Extra keys are identifiers")
+              .describe("Extra key"),
+            type: z
+              .enum(["string", "boolean", "int", "long", "float"])
+              .describe("Extra value type"),
+            value: z
+              .string()
+              .max(2048)
+              .regex(/^[^\x00]*$/u, "Extra values cannot contain NUL")
+              .describe(
+                "Extra value as text: string may be empty; boolean is true or false; int and long are -?digits; float is -?digits[.digits]",
+              ),
+          })
+          .superRefine((extra, context) => {
+            const format = extraValueFormats[extra.type];
+            if (format !== undefined && !format.pattern.test(extra.value))
+              context.addIssue({
+                code: "custom",
+                path: ["value"],
+                message: `${format.label} extra values must be ${format.expected}`,
+              });
+          }),
       )
       .max(16)
       .default([])

@@ -97,7 +97,10 @@ it
             action: "android.intent.action.MAIN",
             data_uri: "https://example.invalid/launch",
             component: "com.example/.Main",
-            extras: [{ key: "mode", type: "string" as const, value: "test" }],
+            extras: [
+              { key: "mode", type: "string" as const, value: "test" },
+              { key: "empty", type: "string" as const, value: "" },
+            ],
           };
     const success = await client.callTool({
       name: operation,
@@ -181,9 +184,24 @@ it
                 "-d https://example.invalid/launch",
                 "-n com.example/.Main",
                 "--es mode test",
+                "--es empty ''",
               ]),
         ].join(" "),
       ),
     );
+
+    if (operation !== "start_adb_activity") return;
+    const mistyped = await client.callTool({
+      name: operation,
+      arguments: {
+        ...input,
+        extras: [{ key: "flag", type: "boolean", value: "yes" }],
+      },
+    });
+    expect(mistyped.isError).toBe(true);
+    expect(responseText(mistyped)).toContain(
+      "Input validation error: Invalid arguments for tool start_adb_activity: extras.0.value: Boolean extra values must be true or false",
+    );
+    expect(await fakeAdb.calls()).toEqual(calls);
   },
 );
