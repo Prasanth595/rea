@@ -428,7 +428,7 @@ describe("Ghidra raw-binary profile", () => {
       compiler_spec_id: "default",
       entry_point: "0x8001",
       language_selection: "caller-supplied-v1",
-      load_image_evidence: "independent-raw-mapping-context-v4",
+      load_image_evidence: "independent-raw-mapping-context-v5",
     });
     expect(
       ghidra
@@ -3206,6 +3206,7 @@ describe("Ghidra disabled analyzer options", () => {
         languageId: "x86:LE:32:default",
         compilerSpecId: "gcc",
         baseAddr: "0x1000",
+        entryPoint: "0x1000",
       },
     });
     await client.close();

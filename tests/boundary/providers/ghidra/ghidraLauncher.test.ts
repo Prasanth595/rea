@@ -126,6 +126,7 @@ describe("Ghidra raw-binary loader", () => {
         languageId: "ARM:LE:32:v7",
         compilerSpecId: "default",
         baseAddr: "0x8000000",
+        entryPoint: "0x8000004",
       },
     });
     expectOptions(arguments_, [
@@ -140,6 +141,7 @@ describe("Ghidra raw-binary loader", () => {
     );
     expect(arguments_[prepare + 2]).toBe("ARM:LE:32:v7");
     expect(arguments_[prepare + 3]).toBe("0x8000000");
+    expect(arguments_[prepare + 4]).toBe("0x8000004");
     expect(prepare).toBeLessThan(arguments_.indexOf("-postScript"));
     expect(arguments_).toContain("-readOnly");
     expect(arguments_).toContain("-deleteProject");
@@ -223,6 +225,7 @@ describe("Ghidra headless launcher", () => {
           languageId: "x86:LE:32:default",
           compilerSpecId: "default",
           baseAddr: "0x1000",
+          entryPoint: "0x1000",
         },
       },
     ])
@@ -289,6 +292,7 @@ describe("Ghidra configured import language and seeds", () => {
           languageId: "ARM:LE:32:v7",
           compilerSpecId: "default",
           baseAddr: "0x8000000",
+          entryPoint: "0x8000000",
         },
       }),
     ).toThrow(/cannot be combined with a raw-binary import/u);

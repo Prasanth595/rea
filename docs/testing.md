@@ -1050,6 +1050,15 @@ specifications, independent mappings, unchanged bytes, and decompilation of a
 known return value. AArch64 remains covered by deterministic tests rather than
 this real-provider lane. See [raw binary analysis](raw-binary.md).
 
+`npm run verify:ghidra:cortex-m` uses source-owned Cortex-M0 instructions in a
+headerless image with vector data and a code entry distinct from its load base.
+On Linux/macOS with a caller-installed Ghidra/JDK it checks real CLI/MCP mapping
+parity, Thumb context, function calls and decompilation at zero and nonzero bases,
+odd function-pointer rejection without replacing the current session, generic
+ARM profile preservation, source identity and process/runtime cleanup. It does
+not execute target code or qualify Windows, all Cortex-M ISA variants or device
+peripherals. See the [Cortex-M lane](raw-binary.md#cortex-m-thumb).
+
 `npm run verify:ghidra:address-context` runs on Linux with a caller-installed
 Ghidra, full JDK, and an x86-64 ELF GCC toolchain (`CC` selects another compatible
 compiler). It builds

@@ -12,10 +12,12 @@ export interface GhidraRawBinaryLanguage {
  * supported generic compiler specification. These are analysis conventions,
  * not evidence of the target's original compiler. Each family has one fixed
  * byte order: m68k is big-endian and the others are little-endian. Big-endian
- * ARM, Thumb-only, Cortex-M, and other processor variants are out of scope.
+ * ARM and unspecified processor variants are out of scope. Cortex-M selects
+ * the explicit little-endian Cortex/Thumb profile, not generic ARM.
  */
 export const ghidraRawBinaryLanguage = (
   architecture: RawBinaryAdmission["architecture"],
+  variant?: RawBinaryAdmission["processorVariant"],
 ): GhidraRawBinaryLanguage => {
   switch (architecture) {
     case "6502":
@@ -46,7 +48,8 @@ export const ghidraRawBinaryLanguage = (
       };
     case "arm":
       return {
-        languageId: "ARM:LE:32:v7",
+        languageId:
+          variant === "cortex-m" ? "ARM:LE:32:Cortex" : "ARM:LE:32:v7",
         compilerSpecId: "default",
         defaultAddressSpace: "ram",
       };

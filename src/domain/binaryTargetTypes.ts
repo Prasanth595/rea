@@ -15,6 +15,10 @@ export const BINARY_ARCHITECTURES = [
 ] as const;
 export type BinaryArchitecture = (typeof BINARY_ARCHITECTURES)[number];
 
+/** Explicit processor variant for a bounded headerless analysis profile. */
+export const RAW_PROCESSOR_VARIANTS = ["cortex-m"] as const;
+export type RawProcessorVariant = (typeof RAW_PROCESSOR_VARIANTS)[number];
+
 /**
  * Families admitted only by explicit raw-binary selection. Header detection
  * never yields them, so detected targets and Evidence subjects exclude them.
@@ -207,6 +211,9 @@ export type BinaryTarget =
       )[];
       readonly entryPoint: string;
       readonly entryPointSource: string;
+      readonly baseAddress?: string;
+      readonly baseAddressSource?: string;
+      readonly processorVariant?: RawProcessorVariant;
       readonly executableRole?: never;
       readonly managed?: never;
     })

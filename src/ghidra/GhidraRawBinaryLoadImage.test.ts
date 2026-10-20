@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
 import { attestGhidraRawBinaryLoadImage } from "./GhidraLoadImageValues.js";
@@ -5,6 +6,12 @@ import { fixtureRawBinaryLoadImage } from "./GhidraRawBinaryLoadImage.fixture.js
 import { ghidraRawBinaryLanguage } from "./GhidraRawBinaryLanguage.js";
 
 describe("raw-binary Ghidra language binding", () => {
+  it("selects Cortex only through the explicit ARM variant", () => {
+    expect(ghidraRawBinaryLanguage("arm", "cortex-m").languageId).toBe(
+      "ARM:LE:32:Cortex",
+    );
+    expect(ghidraRawBinaryLanguage("arm").languageId).toBe("ARM:LE:32:v7");
+  });
   it("maps the big-endian m68k family to the default 68000 language", () => {
     expect(ghidraRawBinaryLanguage("m68k")).toEqual({
       languageId: "68000:BE:32:default",
@@ -34,6 +41,38 @@ describe("raw-binary Ghidra language binding", () => {
       defaultAddressSpace: "ram",
     });
   });
+});
+
+it("requires observed Thumb mode at the selected Cortex-M entry", () => {
+  const f = fixtureRawBinaryLoadImage();
+  f.target = { ...f.target, processorVariant: "cortex-m" };
+  f.observation.language_id = "ARM:LE:32:Cortex";
+  const thumbContext = { name: "TMode", value_hex: "0x1" };
+  f.observation.entry_context = [
+    { address: f.target.entryPoint, registers: [thumbContext] },
+  ];
+  expect(
+    attestGhidraRawBinaryLoadImage(f.snapshot, f.target, f.observation),
+  ).toMatchObject({ ok: true, value: { status: "verified" } });
+  thumbContext.value_hex = "0x0";
+  expect(
+    attestGhidraRawBinaryLoadImage(f.snapshot, f.target, f.observation),
+  ).toMatchObject({
+    ok: true,
+    value: {
+      status: "mismatch",
+      checks: expect.arrayContaining([
+        expect.objectContaining({
+          name: "entry_context.TMode",
+          matched: false,
+        }),
+      ]),
+    },
+  });
+  f.observation.entry_context = [];
+  expect(
+    attestGhidraRawBinaryLoadImage(f.snapshot, f.target, f.observation),
+  ).toMatchObject({ ok: true, value: { status: "mismatch" } });
 });
 
 describe("raw-binary mapped-block state", () => {
@@ -171,6 +210,49 @@ describe("raw-binary mapped-block state", () => {
   });
 });
 
+it("attests the code entry offset independently of the source mapping", () => {
+  const f = fixtureRawBinaryLoadImage();
+  const bytes = Buffer.from("000000001eff2fe1", "hex");
+  const digest = createHash("sha256").update(bytes).digest("hex");
+  f.snapshot = { sha256: digest, bytes: bytes.length };
+  f.target = {
+    ...f.target,
+    sha256: digest,
+    baseAddress: "0x8000000",
+    entryPoint: "0x8000004",
+    entryPointSource: "0x08000004",
+  };
+  f.observation.source_files = [
+    {
+      name: "ecu.bin",
+      size: bytes.length,
+      original_sha256: digest,
+      modified_sha256: digest,
+    },
+  ];
+  const mapping = f.observation.mappings[0];
+  if (mapping === undefined) throw new Error("Missing source mapping fixture");
+  Object.assign(mapping, {
+    end: "0x8000007",
+    length: bytes.length,
+    sha256: digest,
+  });
+  f.observation.entry_points = [f.target.entryPoint];
+  expect(
+    attestGhidraRawBinaryLoadImage(f.snapshot, f.target, f.observation),
+  ).toMatchObject({
+    ok: true,
+    value: {
+      status: "verified",
+      base_address: "0x8000000",
+      entry: { address: "0x8000004", file_offset: 4 },
+    },
+  });
+  mapping.start = f.target.entryPoint;
+  expect(
+    attestGhidraRawBinaryLoadImage(f.snapshot, f.target, f.observation),
+  ).toMatchObject({ ok: true, value: { status: "mismatch" } });
+});
 describe("raw-binary independent load-image checks", () => {
   it("retains uninitialized language memory without treating it as file-backed bytes", () => {
     const f = fixtureRawBinaryLoadImage();

@@ -1,7 +1,7 @@
 # Headerless raw-binary analysis with Ghidra
 
 REA admits a headerless executable when the caller supplies the CPU family and
-the address where file offset 0 should be mapped. That interpretation is not
+code entry address, with an optional independent load base. That interpretation is not
 inferred from a `.bin` suffix or from unrecognized bytes.
 
 ## Open and inspect
@@ -26,9 +26,18 @@ rea inspect-native-load-image /absolute/path/to/ecu.bin --target-format raw-bina
 ```
 
 `architecture` is one of `x86`, `x86_64`, `arm`, `arm64`, `6502`, or `m68k`. `entry_point` is a
-hexadecimal address of the form `0x…`. The complete file is mapped starting at
-that address, and Ghidra seeds an `entry` function there before auto-analysis.
-ARM and AArch64 entries must be 4-byte aligned; m68k entries must be 2-byte
+hexadecimal code address of the form `0x…`. By default, the complete file is
+mapped starting at that address. To load an image whose leading bytes are data,
+supply `base_address` (CLI: `--base-address`) separately. File offset 0 maps to
+the load base; Ghidra seeds an `entry` function at `entry_point` before analysis.
+The entry must lie within the mapped image. Its source offset is reported by
+`inspect_native_load_image`, independently of the base.
+
+For example, a caller-selected ARM image with a data word before its code can
+use `base_address: "0x8000000"` and `entry_point: "0x8000004"`. Existing calls
+that omit the base retain their entry-based mapping. The base need not have the
+code entry's alignment; overflow checks apply to the complete mapped file.
+Generic ARM and AArch64 entries must be 4-byte aligned; m68k entries must be 2-byte
 aligned; x86 and 6502 entries may be byte-aligned.
 For 6502, the entry and complete mapped file must fit within `0x0000..0xffff`;
 images that cross the 16-bit boundary are rejected before provider startup.
@@ -42,23 +51,29 @@ Ghidra imports a private snapshot with `BinaryLoader` and these generic
 languages and compiler specifications. Each family has one fixed byte order:
 m68k is big-endian and the others are little-endian.
 
-| architecture | language_id           | compiler_spec_id |
-| ------------ | --------------------- | ---------------- |
-| x86          | `x86:LE:32:default`   | `gcc`            |
-| x86_64       | `x86:LE:64:default`   | `gcc`            |
-| arm          | `ARM:LE:32:v7`        | `default`        |
-| arm64        | `AARCH64:LE:64:v8A`   | `default`        |
-| 6502         | `6502:LE:16:default`  | `default`        |
-| m68k         | `68000:BE:32:default` | `default`        |
+| architecture                       | language_id           | compiler_spec_id |
+| ---------------------------------- | --------------------- | ---------------- |
+| x86                                | `x86:LE:32:default`   | `gcc`            |
+| x86_64                             | `x86:LE:64:default`   | `gcc`            |
+| arm                                | `ARM:LE:32:v7`        | `default`        |
+| arm, `processor_variant: cortex-m` | `ARM:LE:32:Cortex`    | `default`        |
+| arm64                              | `AARCH64:LE:64:v8A`   | `default`        |
+| 6502                               | `6502:LE:16:default`  | `default`        |
+| m68k                               | `68000:BE:32:default` | `default`        |
 
 Compiler specifications select analysis conventions; they do not identify the
 original compiler or ABI of a headerless target. Ghidra's x86 languages do not
 provide a compiler specification named `default`.
 
-Those settings, the caller-supplied entry, and `language_selection:
-caller-supplied-v1` are committed in the analysis profile. A different entry
+Those settings, the caller-supplied base and entry, and `language_selection:
+caller-supplied-v1` are committed in the analysis profile. A different base, entry
 or architecture is a different profile; snapshots from header-detected targets
 do not replay.
+
+Raw snapshot targets retain a distinct base, and session reuse compares it as
+well as the entry. An explicit base equal to the entry is equivalent to omitting
+it. This import revision updates the Ghidra analysis profile, so older raw
+snapshots must be regenerated rather than replayed under the new preparer.
 
 The mapped start is independent of Ghidra's program image base, which remains
 `0x0` for BinaryLoader. Ghidra may report additional language-defined entry
@@ -78,6 +93,49 @@ Hopper and IDA refuse raw-binary targets. Windows Ghidra P0 admits native PE
 applications/DLLs and explicitly selected raw 6502 images. Other raw CPU families
 remain outside the Windows boundary. Native path admission, private DACLs, Job
 Object ownership, immutable snapshots, and the no-mutation policy still apply.
+
+## Cortex-M / Thumb
+
+Select `architecture: "arm"` and `processor_variant: "cortex-m"` explicitly.
+The ordinary ARM profile remains `ARM:LE:32:v7` when the variant is omitted.
+The Cortex profile selects Ghidra's little-endian Cortex/Thumb language and
+requires a two-byte-aligned code entry. An odd Thumb function pointer, such as
+one read from a reset vector, is rejected with a diagnostic; supply its actual
+even code address instead. REA does not silently clear pointer bits.
+
+For this guide's source-owned synthetic fixture (not a device memory map):
+
+```json
+{
+  "path": "/absolute/path/to/synthetic-cortex.bin",
+  "format": "raw-binary",
+  "architecture": "arm",
+  "processor_variant": "cortex-m",
+  "base_address": "0x8000000",
+  "entry_point": "0x8000040",
+  "provider_id": "ghidra"
+}
+```
+
+The equivalent CLI selection is `--target-format raw-binary --architecture arm
+--processor-variant cortex-m --base-address 0x8000000 --entry-point 0x8000040`.
+The base, entry and variant are part of session and snapshot identity; a generic
+ARM analysis cannot be reused as a Cortex analysis. Ghidra's entry `TMode` context
+is checked before disassembly and independently reported by
+`inspect_native_load_image`. Missing or non-Thumb context cannot yield a verified
+Cortex import.
+
+`npm run verify:ghidra:cortex-m` uses a source-owned Cortex-M0 instruction fixture
+with initial vector data, a Thumb call, a branch and an absolute data pointer.
+It checks zero and nonzero load bases through the real CLI/MCP, source mappings,
+entry context, decompilation, invalid odd-pointer rejection, variant partitioning,
+unchanged source bytes and cleanup. It does not execute the firmware. Ghidra's
+Cortex language supports a broader ISA than Cortex-M0; this fixture does not
+validate every Cortex-M version, floating-point ABI or TrustZone behavior.
+
+Base and code entry must be supplied by the analyst. REA does not infer vector
+tables, RAM, peripheral regions or vendor boot mappings. Windows P0 retains its
+existing raw-6502-only boundary; this is a Linux/macOS provider lane.
 
 ## NMOS 6502
 
@@ -142,8 +200,9 @@ exercised.
 
 - Headers are not discovered from file bytes. This increment does not guess
   load addresses, vector tables, or memory maps.
-- Big-endian ARM, Thumb-only, Cortex-M, and other Ghidra processor variants are
-  unsupported. m68k is the only big-endian family.
+- Big-endian ARM and unspecified Thumb-only or other Ghidra processor variants
+  are unsupported. Cortex-M requires its explicit variant; m68k is the only
+  big-endian family.
 - Reset vectors, memory-mapped I/O, and firmware boot sequences are not
   emulated.
 - Independent load-image verification covers source identity, mapped file

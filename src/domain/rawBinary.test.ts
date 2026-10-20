@@ -225,7 +225,108 @@ describe("m68k raw-binary admission", () => {
   );
 });
 
+describe("raw-binary independent load base", () => {
+  it("preserves both canonical addresses and their source spelling", () => {
+    expect(
+      admitRawBinary({
+        architecture: "arm",
+        entryPoint: "0x00001004",
+        baseAddress: "0x00001000",
+        fileBytes: 8,
+      }),
+    ).toEqual({
+      ok: true,
+      value: {
+        architecture: "arm",
+        entryPoint: "0x1004",
+        entryPointSource: "0x00001004",
+        baseAddress: "0x1000",
+        baseAddressSource: "0x00001000",
+      },
+    });
+  });
+  it.each(["0xffc", "0x1008"])(
+    "rejects code entry %s outside the load",
+    (entryPoint) => {
+      expect(
+        admitRawBinary({
+          architecture: "arm",
+          entryPoint,
+          baseAddress: "0x1000",
+          fileBytes: 8,
+        }),
+      ).toMatchObject({
+        ok: false,
+        error: {
+          constraint: "load_selection_rejected",
+          reason: expect.stringContaining("inside the mapped image"),
+        },
+      });
+    },
+  );
+  it.each([null, 4096, "1000", "0xwrong"])(
+    "rejects malformed base %s",
+    (baseAddress) => {
+      expect(
+        admitRawBinary({
+          architecture: "arm",
+          entryPoint: "0x1000",
+          baseAddress,
+          fileBytes: 8,
+        }),
+      ).toMatchObject({
+        ok: false,
+        error: { reason: expect.stringContaining("base_address") },
+      });
+    },
+  );
+  it("checks address overflow from the load base", () => {
+    expect(
+      admitRawBinary({
+        architecture: "6502",
+        entryPoint: "0xffff",
+        baseAddress: "0xfffe",
+        fileBytes: 3,
+      }),
+    ).toMatchObject({
+      ok: false,
+      error: { reason: expect.stringContaining("6502 address width") },
+    });
+  });
+  it("allows an unaligned data base while requiring an aligned ARM code entry", () => {
+    expect(
+      admitRawBinary({
+        architecture: "arm",
+        entryPoint: "0x1004",
+        baseAddress: "0x1001",
+        fileBytes: 7,
+      }).ok,
+    ).toBe(true);
+    expect(
+      admitRawBinary({
+        architecture: "arm",
+        entryPoint: "0x1002",
+        baseAddress: "0x1000",
+        fileBytes: 8,
+      }),
+    ).toMatchObject({
+      ok: false,
+      error: { reason: expect.stringContaining("4-byte aligned") },
+    });
+  });
+});
+
 describe("raw-binary selection pairing", () => {
+  it("rejects a processor variant outside raw imports", () => {
+    expect(rawBinarySelectionError({ processorVariant: "cortex-m" })).toBe(
+      "processor_variant applies only with format=raw-binary",
+    );
+  });
+  it("rejects a load base for a header-detected target", () => {
+    expect(rawBinarySelectionError({ baseAddress: "0x1000" })).toBe(
+      "base_address applies only with format=raw-binary",
+    );
+  });
   it("requires architecture and entry with format=raw-binary", () => {
     expect(rawBinarySelectionError({ format: "raw-binary" })).toBe(
       "format=raw-binary requires architecture and entry_point",
@@ -245,5 +346,58 @@ describe("raw-binary selection pairing", () => {
     expect(
       rawBinarySelectionError({ format: "dos-com", architecture: "x86" }),
     ).toBe("architecture and entry_point apply only with format=raw-binary");
+  });
+});
+
+describe("explicit Cortex-M admission", () => {
+  it("accepts halfword code entry only when Cortex-M is selected", () => {
+    const input = {
+      architecture: "arm",
+      baseAddress: "0x1000",
+      entryPoint: "0x1002",
+      fileBytes: 6,
+    };
+    expect(
+      admitRawBinary({ ...input, processorVariant: "cortex-m" }),
+    ).toMatchObject({
+      ok: true,
+      value: { processorVariant: "cortex-m", entryPoint: "0x1002" },
+    });
+    expect(admitRawBinary(input)).toMatchObject({
+      ok: false,
+      error: { reason: expect.stringContaining("4-byte aligned") },
+    });
+  });
+  it("rejects an odd Thumb function pointer rather than silently clearing its bit", () => {
+    expect(
+      admitRawBinary({
+        architecture: "arm",
+        baseAddress: "0x1000",
+        entryPoint: "0x1003",
+        processorVariant: "cortex-m",
+        fileBytes: 8,
+      }),
+    ).toMatchObject({
+      ok: false,
+      error: { reason: expect.stringContaining("odd Thumb function pointer") },
+    });
+  });
+  it.each([
+    ["x86", "cortex-m"],
+    ["arm64", "cortex-m"],
+    ["arm", "thumb"],
+    ["arm", null],
+  ])("rejects incompatible %s / %s", (architecture, processorVariant) => {
+    expect(
+      admitRawBinary({
+        architecture,
+        processorVariant,
+        entryPoint: "0x1000",
+        fileBytes: 8,
+      }),
+    ).toMatchObject({
+      ok: false,
+      error: { constraint: "load_selection_rejected" },
+    });
   });
 });

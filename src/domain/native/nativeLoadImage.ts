@@ -120,7 +120,7 @@ export const nativeLoadImageSchema = z.union([
     file_bytes: integer.min(1),
     entry: z.strictObject({
       address: address,
-      file_offset: z.literal(0),
+      file_offset: integer,
     }),
     observations: nativeLoadImageObservationSchema,
     checks: z.array(nativeLoadImageCheckSchema),

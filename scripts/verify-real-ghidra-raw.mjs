@@ -62,6 +62,11 @@ const env = {
         REA_GHIDRA_DISABLED_ANALYZERS:
           process.env.REA_GHIDRA_DISABLED_ANALYZERS,
       }),
+  ...(process.env.REA_DARWIN_MODULE_CACHE_PATH === undefined
+    ? {}
+    : {
+        REA_DARWIN_MODULE_CACHE_PATH: process.env.REA_DARWIN_MODULE_CACHE_PATH,
+      }),
 };
 const transport = new StdioClientTransport({
   command: process.execPath,
@@ -75,6 +80,7 @@ transport.stderr?.on("data", (chunk) => {
   stderr = (stderr + chunk.toString()).slice(-65536);
 });
 let report;
+let observedProvider;
 try {
   await client.connect(transport);
   const profiles = [];
@@ -90,6 +96,8 @@ try {
     const entry = `0x${BigInt(entryPoint).toString(16)}`;
     assert.equal(opened.entry_point, entry);
     const image = await call("inspect_native_load_image");
+    observedProvider = image.provider;
+    assert.equal(observedProvider.id, "ghidra");
     assert.equal(
       image.normalized_result.status,
       "verified",
@@ -160,6 +168,71 @@ try {
   assert.equal(unchanged.analysis_run.run_id, sessions[2]);
   assert.equal(unchanged.entry_point, "0x9000000");
   await call("close_binary");
+
+  // A source-owned data word precedes the ARM bx-lr instruction. Moving the
+  // code entry must not move the file or seed a function at the data word.
+  const separatedBytes = Buffer.from("000000001eff2fe11eff2fe1", "hex");
+  const separatedSha = createHash("sha256")
+    .update(separatedBytes)
+    .digest("hex");
+  const separatedPath = join(workspace, "separate-entry.bin");
+  await writeFile(separatedPath, separatedBytes);
+  const separatedRunIds = [];
+  const separatedProfiles = [];
+  for (const base of ["0x8000000", "0x08000000", "0x7fffffc"]) {
+    const opened = await call("open_binary", {
+      path: separatedPath,
+      format: "raw-binary",
+      architecture: "arm",
+      base_address: base,
+      entry_point: "0x8000004",
+    });
+    assert.equal(opened.base_address, `0x${BigInt(base).toString(16)}`);
+    const loaded = await call("inspect_native_load_image", {}, separatedSha);
+    assert.equal(
+      loaded.normalized_result.status,
+      "verified",
+      JSON.stringify(loaded),
+    );
+    assert.equal(loaded.normalized_result.base_address, opened.base_address);
+    assert.equal(loaded.normalized_result.entry.address, "0x8000004");
+    assert.equal(
+      loaded.normalized_result.entry.file_offset,
+      Number(0x8000004n - BigInt(base)),
+    );
+    separatedProfiles.push(loaded.analysis_profile.digest);
+    separatedRunIds.push((await call("binary_session")).analysis_run.run_id);
+  }
+  assert.equal(separatedRunIds[0], separatedRunIds[1]);
+  assert.equal(separatedProfiles[0], separatedProfiles[1]);
+  assert.notEqual(separatedRunIds[1], separatedRunIds[2]);
+  assert.notEqual(separatedProfiles[1], separatedProfiles[2]);
+  await call("close_binary");
+  const separatedCli = await promisify(execFile)(
+    process.execPath,
+    [
+      entrypoint,
+      "inspect-native-load-image",
+      separatedPath,
+      "--target-format",
+      "raw-binary",
+      "--architecture",
+      "arm",
+      "--base-address",
+      "0x8000000",
+      "--entry-point",
+      "0x8000004",
+      "--provider",
+      "ghidra",
+      "--json",
+    ],
+    { env, timeout: 240000, maxBuffer: 16 * 1024 * 1024 },
+  );
+  const separatedEvidence = parseEvidence(JSON.parse(separatedCli.stdout));
+  assert.equal(separatedEvidence.normalized_result.status, "verified");
+  assert.equal(separatedEvidence.normalized_result.entry.file_offset, 4);
+  assert.equal(separatedEvidence.analysis_profile.digest, separatedProfiles[0]);
+  assert.deepEqual(await readFile(separatedPath), separatedBytes);
 
   const { stdout } = await promisify(execFile)(
     process.execPath,
@@ -294,8 +367,14 @@ try {
     ok: true,
     mocked: false,
     lane: "ghidra-raw",
+    separate_load_base_and_entry: {
+      cli: true,
+      mcp: true,
+      canonical_reuse: true,
+      different_base_partition: true,
+    },
     host: process.platform,
-    provider: { id: "ghidra", version: installation.providerVersion },
+    provider: observedProvider,
     target: {
       format: "raw-binary",
       architecture: "arm",

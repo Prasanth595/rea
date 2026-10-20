@@ -2,6 +2,7 @@ import type { InvestigationRecordPort } from "../investigation/InvestigationReco
 import type { ExecutableFormatHint } from "../../domain/dosCom.js";
 import type {
   BinaryArchitecture,
+  RawProcessorVariant,
   BinaryTarget,
 } from "../../domain/binaryTargetTypes.js";
 import type { JsonValue } from "../../domain/jsonValue.js";
@@ -71,6 +72,8 @@ export interface BinarySessionPort
       readonly formatHint?: ExecutableFormatHint;
       readonly architecture?: BinaryArchitecture;
       readonly entryPoint?: string;
+      readonly baseAddress?: string;
+      readonly processorVariant?: RawProcessorVariant;
       readonly snapshot?: AnalysisSnapshot;
       readonly loadSnapshot?: AnalysisSnapshotLoader;
       readonly providerId?: AnalysisProviderSelector;

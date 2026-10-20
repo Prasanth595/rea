@@ -296,9 +296,15 @@ context. PSP/stack/device state remains unmodeled. See [DOS guide](https://githu
 For other headerless images (embedded firmware without ELF/Mach-O/PE/MZ
 headers), open with `format: "raw-binary"`, `architecture` (`x86`, `x86_64`,
 `arm`, `arm64`, `6502`, or `m68k`), and `entry_point` (`0x` hex). File offset 0 is mapped at
-that address. Hopper and IDA refuse this interpretation; Ghidra uses
+that address unless a separate `base_address` is supplied. The entry must lie
+inside the loaded file; the reported entry file offset reflects that mapping.
+Hopper and IDA refuse this interpretation; Ghidra uses
 `BinaryLoader` with a generic language: big-endian for `m68k`, little-endian
-otherwise. Big-endian ARM, Thumb-only, and Cortex-M variants are unsupported.
+otherwise. Select `architecture: "arm", processor_variant: "cortex-m"` for the
+explicit Cortex/Thumb profile, with an even code entry and caller-supplied load
+base; Ghidra's Thumb context is independently checked. Omission keeps generic
+ARM. Big-endian ARM and unspecified Thumb variants remain unsupported. Vector
+table and device memory-map discovery are not provided.
 `6502` selects NMOS 6502; the entry and complete file mapping must fit within
 `0x0000..0xffff`. 65C02, 65816, cartridge containers, bank switching, and mapper
 semantics are unsupported. `m68k` requires an even entry and decodes the 68040

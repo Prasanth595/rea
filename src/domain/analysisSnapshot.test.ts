@@ -110,6 +110,27 @@ describe("analysis snapshot target identity", () => {
       entryPointSource: "0x08000000",
     };
     const snapshot = snapshotTarget(target);
+    const shiftedBase = { ...target, baseAddress: "0x7fffffc" };
+    const cortex = { ...target, processorVariant: "cortex-m" as const };
+    expect(snapshotMatchesTarget(snapshot, cortex)).toBe(false);
+    expect(snapshotTarget(cortex)).toHaveProperty(
+      "processor_variant",
+      "cortex-m",
+    );
+    expect(snapshotMatchesTarget(snapshot, shiftedBase)).toBe(false);
+    expect(snapshotTarget(shiftedBase)).toHaveProperty(
+      "base_address",
+      "0x7fffffc",
+    );
+    expect(
+      snapshotMatchesTarget(snapshot, {
+        ...target,
+        baseAddress: target.entryPoint,
+      }),
+    ).toBe(true);
+    expect(
+      snapshotTarget({ ...target, baseAddress: target.entryPoint }),
+    ).toEqual(snapshot);
     const binding = snapshotBinding(ANALYSIS_SNAPSHOT_PROFILE);
     const changed = {
       ...target,

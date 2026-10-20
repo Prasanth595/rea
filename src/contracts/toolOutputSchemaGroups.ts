@@ -15,6 +15,8 @@ import {
 import {
   binaryArchitectureSchema,
   rawBinaryEntryPointSchema,
+  rawBinaryBaseAddressSchema,
+  rawProcessorVariantSchema,
 } from "../domain/rawBinary.js";
 import { nativeFunctionAnnotationsSchema } from "../domain/native/nativeFunctionAnnotations.js";
 import { nativeLoadImageSchema } from "../domain/native/nativeLoadImage.js";
@@ -479,8 +481,14 @@ const rawLifecycleTargetSchema = z.object({
   kind: z.literal("executable"),
   architecture: binaryArchitectureSchema,
   entry_point: rawBinaryEntryPointSchema.describe(
-    "Canonical caller-selected address where raw file offset 0 is mapped and execution is seeded.",
+    "Canonical caller-selected code entry; also the load base when base_address is omitted.",
   ),
+  base_address: rawBinaryBaseAddressSchema
+    .optional()
+    .describe(
+      "Canonical explicit load address of raw file offset 0, independent of the code entry.",
+    ),
+  processor_variant: rawProcessorVariantSchema.optional(),
 });
 
 /** Exact structured-content schemas for target lifecycle operations. */

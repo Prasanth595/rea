@@ -12,6 +12,30 @@ import { describe, expect, it } from "vitest";
 import { parseBinaryTarget } from "../../../src/application/BinaryTargetResolver.js";
 import { createTestTempDirectory } from "../../fixtures/temporaryDirectory.js";
 
+it("retains an explicit load base separately from the code entry", async () => {
+  const directory = await createTestTempDirectory("rea-raw-separated-");
+  const path = join(directory, "fixture.bin");
+  const bytes = Buffer.from("000000001eff2fe1", "hex");
+  await writeFile(path, bytes);
+  expect(
+    await parseBinaryTarget(path, {
+      formatHint: "raw-binary",
+      architecture: "arm",
+      baseAddress: "0x00001000",
+      entryPoint: "0x00001004",
+    }),
+  ).toMatchObject({
+    ok: true,
+    value: {
+      baseAddress: "0x1000",
+      baseAddressSource: "0x00001000",
+      entryPoint: "0x1004",
+      entryPointSource: "0x00001004",
+      sha256: createHash("sha256").update(bytes).digest("hex"),
+    },
+  });
+  expect(await readFile(path)).toEqual(bytes);
+});
 describe("raw-binary admission", () => {
   it("preserves the requested raw path for Windows reparse admission", async () => {
     const directory = await createTestTempDirectory("rea-raw-linked-");
