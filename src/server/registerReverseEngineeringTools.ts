@@ -32,12 +32,15 @@ export const registerReverseEngineeringTools = (
   withAdmittedExternalMutation?: <Value>(
     path: string | undefined,
     signal: AbortSignal | undefined,
-    operation: () => Promise<Result<Value, AnalysisError>>,
+    operation: (
+      onDispatch?: () => void,
+    ) => Promise<Result<Value, AnalysisError>>,
     retirementFailure: (
       value: Result<Value, AnalysisError>,
       error: AnalysisError,
     ) => AnalysisError,
   ) => Promise<Result<Result<Value, AnalysisError>, AnalysisError>>,
+  registerRizin = true,
 ): void => {
   const objdump = toolContract("inspect_with_objdump");
   const rizin = toolContract("execute_rizin_command");
@@ -71,6 +74,8 @@ export const registerReverseEngineeringTools = (
         },
       ),
   );
+  // A fixed analysis source cannot retire or refresh its pre-mutation binding.
+  if (!registerRizin) return;
   server.registerTool(
     rizin.name,
     toolRegistrationOptions(rizin),
@@ -83,11 +88,14 @@ export const registerReverseEngineeringTools = (
         const admitted = await withAdmittedExternalMutation(
           parsed.data.path,
           context.mcpReq.signal,
-          async () => {
-            invalidateSnapshotForExternalMutation?.();
+          async (onDispatch) => {
             return logToolExecution(logger, rizin.name, () =>
               service.executeRizinCommand(parsed.data, {
                 signal: context.mcpReq.signal,
+                onDispatch: () => {
+                  onDispatch?.();
+                  invalidateSnapshotForExternalMutation?.();
+                },
               }),
             );
           },
@@ -137,14 +145,12 @@ export const registerReverseEngineeringTools = (
         withAdmittedAnalysis,
         delivery,
         async () => {
-          if (
-            invalidateSnapshotForExternalMutation !== undefined &&
-            rizinInputSchema.safeParse(input).success
-          )
-            invalidateSnapshotForExternalMutation();
           const result = await logToolExecution(logger, rizin.name, () =>
             service.executeRizinCommand(input, {
               signal: context.mcpReq.signal,
+              ...(invalidateSnapshotForExternalMutation === undefined
+                ? {}
+                : { onDispatch: invalidateSnapshotForExternalMutation }),
             }),
           );
           if (!result.ok)

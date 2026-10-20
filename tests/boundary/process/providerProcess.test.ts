@@ -494,6 +494,30 @@ describe("provider process host injection", () => {
         );
     }
   });
+
+  it("refuses a required token sweep when the host cannot capture ownership", async () => {
+    const host = systemProcessOwnershipHost as {
+      captureBaseline?: (signal?: AbortSignal) => Promise<unknown>;
+    };
+    const baseline = host.captureBaseline;
+    delete host.captureBaseline;
+    try {
+      await expect(
+        spawnOwnedProviderProcess({
+          command: process.execPath,
+          arguments: [processFixturePath, "exit"],
+          runId: "provider-process-android-run",
+          platform: "android",
+          sweepTokenOwnedProcesses: true,
+        }),
+      ).rejects.toThrow(
+        "Token-owned process cleanup requires a host ownership baseline",
+      );
+    } finally {
+      if (baseline === undefined) delete host.captureBaseline;
+      else host.captureBaseline = baseline;
+    }
+  });
 });
 
 describe("provider process memory limits", () => {

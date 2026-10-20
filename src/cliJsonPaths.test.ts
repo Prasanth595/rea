@@ -75,7 +75,7 @@ describe("CLI JSON path normalization", () => {
       expect.objectContaining({
         path: ["executable_path"],
         message: expect.stringContaining(
-          "must be absolute local filesystem paths",
+          "must be an absolute local filesystem path",
         ),
       }),
     ]);
