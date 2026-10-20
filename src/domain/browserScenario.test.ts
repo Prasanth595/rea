@@ -196,3 +196,62 @@ it("accepts caller-selected viewport sizes and click counts without ceilings", (
   });
   expect(parsed.actions[0]).toMatchObject({ click_count: 4 });
 });
+
+it("enforces signed 32-bit integer boundary for action timeouts and wait durations (#3392)", () => {
+  const baseScenario = {
+    browser: { mode: "launch", executable_path: "/opt/chromium" },
+    start_url: { url: "https://app.example.test/" },
+  };
+
+  // Rejects wait_for_timeout exceeding 2^31 - 1
+  expect(() =>
+    browserScenarioSchema.parse({
+      ...baseScenario,
+      actions: [
+        {
+          step_id: "overflow-wait",
+          action: "wait_for_timeout",
+          duration_ms: 2_147_483_648,
+        },
+      ],
+    }),
+  ).toThrow();
+
+  // Rejects action timeout_ms exceeding 2^31 - 1
+  expect(() =>
+    browserScenarioSchema.parse({
+      ...baseScenario,
+      actions: [
+        {
+          step_id: "overflow-timeout",
+          action: "wait_for",
+          locator: { kind: "css", selector: "#btn" },
+          state: "visible",
+          timeout_ms: 2_147_483_648,
+        },
+      ],
+    }),
+  ).toThrow();
+
+  // Accepts boundary value 2^31 - 1 (2,147,483,647)
+  const valid = browserScenarioSchema.parse({
+    ...baseScenario,
+    actions: [
+      {
+        step_id: "max-wait",
+        action: "wait_for_timeout",
+        duration_ms: 2_147_483_647,
+      },
+      {
+        step_id: "max-timeout",
+        action: "wait_for",
+        locator: { kind: "css", selector: "#btn" },
+        state: "visible",
+        timeout_ms: 2_147_483_647,
+      },
+    ],
+  });
+  expect(valid.actions[0]).toMatchObject({ duration_ms: 2_147_483_647 });
+  expect(valid.actions[1]).toMatchObject({ timeout_ms: 2_147_483_647 });
+});
+
