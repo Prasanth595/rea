@@ -114,6 +114,21 @@ const scenario = browserScenarioSchema.parse({
   },
 });
 
+const attachedScenario = (
+  serviceWorkers: "allow" | "block",
+  storage: Partial<typeof scenario.storage> = scenario.storage,
+) =>
+  browserScenarioSchema.parse({
+    ...scenario,
+    browser: {
+      mode: "connect",
+      cdp_endpoint: "http://127.0.0.1:9222",
+      target_id: "target",
+    },
+    environment: { service_workers: serviceWorkers },
+    storage,
+  });
+
 const fixture = () => {
   const page = Object.assign(new EventEmitter(), {
     url: () => "about:blank",
@@ -211,16 +226,7 @@ beforeEach(() => {
 it("stops attached navigation without storage and retries rejected policy cleanup", async () => {
   const { cleanup } = fixture();
   mocks.storage = undefined;
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-    storage: {},
-  });
+  const attached = attachedScenario("block", {});
   const session = await PlaywrightScenarioSession.open(attached, {}, {});
   const failure = new Error("stopLoading rejected");
   mocks.policySend.mockRejectedValueOnce(failure);
@@ -242,16 +248,7 @@ it("stops attached navigation when cancellation precedes the first close", async
   const { cleanup, page } = fixture();
   mocks.storage = undefined;
   const cancellation = new AbortController();
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-    storage: {},
-  });
+  const attached = attachedScenario("block", {});
   const session = await PlaywrightScenarioSession.open(
     attached,
     {},
@@ -275,15 +272,7 @@ it("stops attached navigation when cancellation precedes the first close", async
 
 it("assigns attached navigation stopping to the storage owner once", async () => {
   const { cleanup, storage } = fixture();
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-  });
+  const attached = attachedScenario("block");
   const session = await PlaywrightScenarioSession.open(attached, {}, {});
 
   await expect(session.close(true)).resolves.toBe("disconnected-external");
@@ -301,15 +290,7 @@ it("transfers attached navigation stopping after storage cleanup fails", async (
   const storageFailure = new Error("storage stop unconfirmed");
   storage?.close.mockRejectedValueOnce(storageFailure);
   const policyFailure = new Error("policy stop unconfirmed");
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-  });
+  const attached = attachedScenario("block");
   const session = await PlaywrightScenarioSession.open(attached, {}, {});
   mocks.policySend.mockRejectedValueOnce(policyFailure);
 
@@ -332,15 +313,7 @@ it("transfers a late stop request after storage has already released", async () 
   const { cleanup, storage } = fixture();
   const cancellation = new AbortController();
   storage?.close.mockResolvedValue({ loadingStopped: false });
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-  });
+  const attached = attachedScenario("block");
   const session = await PlaywrightScenarioSession.open(
     attached,
     {},
@@ -380,15 +353,7 @@ it.each(["pending", "settled"] as const)(
     const { cleanup, page, storage } = fixture();
     const cancellation = new AbortController();
     storage?.close.mockResolvedValue({ loadingStopped: false });
-    const attached = browserScenarioSchema.parse({
-      ...scenario,
-      browser: {
-        mode: "connect",
-        cdp_endpoint: "http://127.0.0.1:9222",
-        target_id: "target",
-      },
-      environment: { service_workers: "block" },
-    });
+    const attached = attachedScenario("block");
     const session = await PlaywrightScenarioSession.open(
       attached,
       {},
@@ -465,15 +430,7 @@ it("transfers cancellation to a no-stop cleanup already in progress", async () =
   const { cleanup, page, storage } = fixture();
   const cancellation = new AbortController();
   storage?.close.mockResolvedValue({ loadingStopped: false });
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-  });
+  const attached = attachedScenario("block");
   const session = await PlaywrightScenarioSession.open(
     attached,
     {},
@@ -528,15 +485,7 @@ it("does not repeat a stop confirmed by storage during a late retry", async () =
   const { cleanup, page, storage } = fixture();
   const cancellation = new AbortController();
   storage?.close.mockResolvedValue({ loadingStopped: true });
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-  });
+  const attached = attachedScenario("block");
   const session = await PlaywrightScenarioSession.open(
     attached,
     {},
@@ -586,15 +535,7 @@ it("transfers cancellation arriving during final event cleanup", async () => {
   const { cleanup, page, storage } = fixture();
   const cancellation = new AbortController();
   storage?.close.mockResolvedValue({ loadingStopped: false });
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-  });
+  const attached = attachedScenario("block");
   const session = await PlaywrightScenarioSession.open(
     attached,
     {},
@@ -638,15 +579,7 @@ it("stops a connected page when service workers are allowed", async () => {
   const { cleanup, page, storage } = fixture();
   const cancellation = new AbortController();
   storage?.close.mockResolvedValue({ loadingStopped: false });
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "allow" },
-  });
+  const attached = attachedScenario("allow");
   const session = await PlaywrightScenarioSession.open(
     attached,
     {},
@@ -691,15 +624,7 @@ it("stops a connected page without storage or a service-worker policy owner", as
   const { cleanup, page } = fixture();
   mocks.storage = undefined;
   const cancellation = new AbortController();
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "allow" },
-  });
+  const attached = attachedScenario("allow");
   const session = await PlaywrightScenarioSession.open(
     attached,
     {},
@@ -736,15 +661,7 @@ it("retries a failed connected-page stop when service workers are allowed", asyn
   const { cleanup, page, storage } = fixture();
   const cancellation = new AbortController();
   storage?.close.mockResolvedValue({ loadingStopped: false });
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "allow" },
-  });
+  const attached = attachedScenario("allow");
   const session = await PlaywrightScenarioSession.open(
     attached,
     {},
@@ -802,15 +719,7 @@ it("retains a late fallback stop failure for retry", async () => {
   const { cleanup, page, storage } = fixture();
   const cancellation = new AbortController();
   storage?.close.mockResolvedValue({ loadingStopped: false });
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-  });
+  const attached = attachedScenario("block");
   const session = await PlaywrightScenarioSession.open(
     attached,
     {},
@@ -891,15 +800,7 @@ it("coalesces concurrent late-stop close retries", async () => {
   const { cleanup, page, storage } = fixture();
   const cancellation = new AbortController();
   storage?.close.mockResolvedValue({ loadingStopped: false });
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-  });
+  const attached = attachedScenario("block");
   const session = await PlaywrightScenarioSession.open(
     attached,
     {},
@@ -1001,15 +902,7 @@ it("retains transferred navigation stopping after setup cleanup fails", async ()
     return policyResponse(method);
   });
   let retainedCleanup: AnalysisCleanupLease | undefined;
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-  });
+  const attached = attachedScenario("block");
 
   await expect(
     PlaywrightScenarioSession.open(
@@ -1038,16 +931,7 @@ it("retains transferred navigation stopping after setup cleanup fails", async ()
 it("allows the bounded policy cleanup chain to cross one second", async () => {
   const { cleanup } = fixture();
   mocks.storage = undefined;
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-    storage: {},
-  });
+  const attached = attachedScenario("block", {});
   const session = await PlaywrightScenarioSession.open(attached, {}, {});
   let releaseStop: () => void = () => undefined;
   let stopStarted: () => void = () => undefined;
@@ -1092,16 +976,7 @@ it("allows the bounded policy cleanup chain to cross one second", async () => {
 it("does not await policy initialization after its child target detaches", async () => {
   const { cleanup } = fixture();
   mocks.storage = undefined;
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-    storage: {},
-  });
+  const attached = attachedScenario("block", {});
   const session = await PlaywrightScenarioSession.open(attached, {}, {});
   let childStarted: () => void = () => undefined;
   let releaseChild: () => void = () => undefined;
@@ -1151,16 +1026,7 @@ it("skips policy restoration for a child without a committed document", async ()
     evaluate: vi.fn(() => new Promise(() => undefined)),
   };
   const session = await PlaywrightScenarioSession.open(
-    browserScenarioSchema.parse({
-      ...scenario,
-      browser: {
-        mode: "connect",
-        cdp_endpoint: "http://127.0.0.1:9222",
-        target_id: "target",
-      },
-      environment: { service_workers: "block" },
-      storage: {},
-    }),
+    attachedScenario("block", {}),
     {},
     {},
   );
@@ -1176,15 +1042,7 @@ it("rejects an init script accepted by CDP when the live realm is unprotected", 
   page.evaluate
     .mockResolvedValueOnce(null)
     .mockResolvedValueOnce("policy_unprotected");
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-  });
+  const attached = attachedScenario("block");
   await expect(
     PlaywrightScenarioSession.open(attached, {}, {}),
   ).rejects.toMatchObject({
@@ -1210,15 +1068,7 @@ it("restores an owned policy script after later setup fails", async () => {
     if (method === "Target.setAutoAttach") throw setupFailure;
     return policyResponse(method);
   });
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-  });
+  const attached = attachedScenario("block");
 
   await expect(PlaywrightScenarioSession.open(attached, {}, {})).rejects.toBe(
     setupFailure,
@@ -1239,15 +1089,7 @@ it("restores an owned policy script after later setup fails", async () => {
 
 it("retains an owned script identifier after rejected removal", async () => {
   const { cleanup } = fixture();
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-  });
+  const attached = attachedScenario("block");
   const session = await PlaywrightScenarioSession.open(attached, {}, {});
   const failure = new Error("removeScript rejected");
   mocks.policySend.mockRejectedValueOnce(failure);
@@ -1268,15 +1110,7 @@ it("retains an owned script identifier after rejected removal", async () => {
 
 it("retries transport close without detaching an already released policy session", async () => {
   fixture();
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-  });
+  const attached = attachedScenario("block");
   const session = await PlaywrightScenarioSession.open(attached, {}, {});
   const failure = new Error("transport close rejected");
   mocks.policyTransportClose.mockRejectedValueOnce(failure);
@@ -1298,16 +1132,7 @@ it.each(["closed page", "detached target"])(
   async (terminal) => {
     const { page } = fixture();
     mocks.storage = undefined;
-    const attached = browserScenarioSchema.parse({
-      ...scenario,
-      browser: {
-        mode: "connect",
-        cdp_endpoint: "http://127.0.0.1:9222",
-        target_id: "target",
-      },
-      environment: { service_workers: "block" },
-      storage: {},
-    });
+    const attached = attachedScenario("block", {});
     const session = await PlaywrightScenarioSession.open(attached, {}, {});
     if (terminal === "closed page") page.isClosed = () => true;
     else
@@ -1334,16 +1159,7 @@ it.each(["closed page", "detached target"])(
 it("retains a detached policy connection until the main realm is restored", async () => {
   const { cleanup, page } = fixture();
   mocks.storage = undefined;
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-    storage: {},
-  });
+  const attached = attachedScenario("block", {});
   const session = await PlaywrightScenarioSession.open(attached, {}, {});
   mocks.policyEvent?.({
     method: "Target.detachedFromTarget",
@@ -1391,15 +1207,7 @@ it("uses browser disconnect as terminal storage release after detach failure", a
 
 it("leaves attached service-worker state alone when the policy allows it", async () => {
   const { cleanup, page } = fixture();
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "allow" },
-  });
+  const attached = attachedScenario("allow");
   const session = await PlaywrightScenarioSession.open(attached, {}, {});
 
   expect(mocks.openBrowser).toHaveBeenCalledWith(
@@ -1415,15 +1223,7 @@ it("leaves attached service-worker state alone when the policy allows it", async
 
 it("blocks new attached service-worker registration without removing existing registrations", async () => {
   const { cleanup, page } = fixture();
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-  });
+  const attached = attachedScenario("block");
   const session = await PlaywrightScenarioSession.open(attached, {}, {});
 
   expect(page.evaluate).toHaveBeenCalledTimes(3);
@@ -1447,16 +1247,7 @@ it("blocks new attached service-worker registration without removing existing re
 it("retains the attached connection when registration restoration fails", async () => {
   const { cleanup } = fixture();
   mocks.storage = undefined;
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-    storage: {},
-  });
+  const attached = attachedScenario("block", {});
   const session = await PlaywrightScenarioSession.open(attached, {}, {});
   const failure = new Error("registration restoration failed");
   let failRestoration = true;
@@ -1498,15 +1289,7 @@ it("cancels a stalled policy preflight without allowing late setup", async () =>
   });
   const cancellation = new AbortController();
   const opening = PlaywrightScenarioSession.open(
-    browserScenarioSchema.parse({
-      ...scenario,
-      browser: {
-        mode: "connect",
-        cdp_endpoint: "http://127.0.0.1:9222",
-        target_id: "target",
-      },
-      environment: { service_workers: "block" },
-    }),
+    attachedScenario("block"),
     {},
     { signal: cancellation.signal },
   );
@@ -1543,15 +1326,7 @@ it("waits for a pending registration installation before cancelled cleanup", asy
   });
   const cancellation = new AbortController();
   const opening = PlaywrightScenarioSession.open(
-    browserScenarioSchema.parse({
-      ...scenario,
-      browser: {
-        mode: "connect",
-        cdp_endpoint: "http://127.0.0.1:9222",
-        target_id: "target",
-      },
-      environment: { service_workers: "block" },
-    }),
+    attachedScenario("block"),
     {},
     { signal: cancellation.signal },
   );
@@ -1582,15 +1357,7 @@ it("waits for a pending registration installation before cancelled cleanup", asy
 it("rejects attached block when caller-owned registrations already exist", async () => {
   const { cleanup, page } = fixture();
   page.evaluate.mockResolvedValueOnce("service_worker_blocked");
-  const attached = browserScenarioSchema.parse({
-    ...scenario,
-    browser: {
-      mode: "connect",
-      cdp_endpoint: "http://127.0.0.1:9222",
-      target_id: "target",
-    },
-    environment: { service_workers: "block" },
-  });
+  const attached = attachedScenario("block");
 
   await expect(
     PlaywrightScenarioSession.open(attached, {}, {}),
