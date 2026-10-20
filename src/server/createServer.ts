@@ -487,9 +487,7 @@ export const createServer = (
       ? undefined
       : (evidence) => session.recordEvidence(evidence),
     analysisAdmission,
-    session === undefined
-      ? undefined
-      : () => session.invalidateSnapshotForExternalMutation(),
+    undefined,
     session === undefined
       ? undefined
       : (path, signal, operation, rebindFailure) =>
@@ -498,7 +496,11 @@ export const createServer = (
             signal,
             operation,
             rebindFailure,
+            "execute_rizin_command",
+            undefined,
+            "provider-dispatch",
           ),
+    session !== undefined,
   );
   registerFridaTools(
     server,
@@ -619,6 +621,8 @@ export const createServer = (
         : { availabilityPolicy: availability.policy }),
       androidAnalysisAvailability: (signal) =>
         android.inspectAvailability(signal),
+      retryReverseEngineeringCleanup: (operation) =>
+        reverseEngineering.retryCleanup(operation),
       adbAnalysisAvailability: (signal) =>
         adbDevice.inspectAvailability(signal),
       apktoolAnalysisAvailability: (signal) =>

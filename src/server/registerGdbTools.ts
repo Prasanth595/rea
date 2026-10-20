@@ -1,7 +1,10 @@
 import type { McpServer, ServerContext } from "@modelcontextprotocol/server";
 import type { Logger } from "pino";
 
-import type { GdbSessionManager } from "../gdb/GdbSessionManager.js";
+import {
+  isGdbInterruptCommand,
+  type GdbSessionManager,
+} from "../gdb/GdbSessionManager.js";
 import type { EvidenceWriter } from "../application/investigation/InvestigationRecordPort.js";
 import { toolContract } from "../contracts/toolContracts.js";
 import { evidenceSchema } from "../domain/evidence.js";
@@ -78,14 +81,18 @@ export const registerGdbTools = (
             context.mcpReq.signal,
           ),
         );
-      const result = await runWithExternalMutationAdmission(
-        session,
-        consoleContract.name,
-        context.mcpReq.signal,
-        execute,
-        (value) => value.evidence,
-        () => manager.retryCleanupFailures(),
-      );
+      // The provider only admits this control while its original run still owns
+      // mutation admission. Queuing it behind that run would deadlock its stop.
+      const result = isGdbInterruptCommand(input.command)
+        ? await execute()
+        : await runWithExternalMutationAdmission(
+            session,
+            consoleContract.name,
+            context.mcpReq.signal,
+            execute,
+            (value) => value.evidence,
+            () => manager.retryCleanupFailures(),
+          );
       if (!result.ok) {
         const partial = result.error.partialObservation;
         const parsed = evidenceSchema.safeParse(partial);

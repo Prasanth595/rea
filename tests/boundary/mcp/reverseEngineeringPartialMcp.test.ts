@@ -70,6 +70,83 @@ it("records partial Evidence and references it in the original MCP error", async
   });
 });
 
+it.each(["missing", "directory"])(
+  "preserves session replay when Rizin rejects a %s artifact before dispatch",
+  async (kind) => {
+    const [target] = await createBinarySessionTargets();
+    const calls: string[] = [];
+    const session = createTestBinarySession(createCacheProvider(calls));
+    const run = vi.fn(async () => ({ stdout: "must not launch", stderr: "" }));
+    const service = new ReverseEngineeringService({ run });
+    const { server, handler } = createReverseEngineeringMcpHarness();
+    registerReverseEngineeringTools(
+      server,
+      service,
+      pino({ enabled: false }),
+      createToolResultDelivery(2 * 1024 * 1024),
+      undefined,
+      undefined,
+      undefined,
+      (path, signal, operation, failure) =>
+        session.withAdmittedExternalMutation(
+          path,
+          signal,
+          operation,
+          failure,
+          "execute_rizin_command",
+          undefined,
+          "provider-dispatch",
+        ),
+    );
+    try {
+      expect((await session.open(target)).ok).toBe(true);
+      expect(
+        (
+          await session.execute("address_name", {
+            address: "0x1000",
+            document: "first",
+          })
+        ).ok,
+      ).toBe(true);
+      const captured = session.exportAnalysisSnapshot();
+      if (!captured.ok) throw captured.error;
+      expect(captured.value.entries).toHaveLength(1);
+      await session.close();
+      expect(
+        (await session.open(target, { snapshot: captured.value })).ok,
+      ).toBe(true);
+      calls.length = 0;
+      const before = session.exportAnalysisSnapshot();
+      const response = (await invokeWithLiveSignal(
+        handler("execute_rizin_command"),
+        {
+          path:
+            kind === "missing"
+              ? join(dirname(target), "missing")
+              : dirname(target),
+          command: "iI",
+        },
+      )) as { isError?: boolean };
+      expect(response.isError).toBe(true);
+      expect(run).not.toHaveBeenCalled();
+      expect(session.activeTarget()?.path).toBe(target);
+      expect(session.exportAnalysisSnapshot()).toEqual(before);
+      expect(
+        (
+          await session.execute("address_name", {
+            address: "0x1000",
+            document: "first",
+          })
+        ).ok,
+      ).toBe(true);
+      expect(calls).toEqual([]);
+    } finally {
+      await service.close();
+      await session.close();
+    }
+  },
+);
+
 it("admits Rizin mutation after invalidating before dispatch", async () => {
   const { server, handler } = createReverseEngineeringMcpHarness();
   const events: string[] = [];
@@ -236,7 +313,7 @@ it("preserves the Rizin operation error when analysis retirement also fails", as
   });
 });
 
-it.each(["success", "timeout"])(
+it.skipIf(process.platform === "win32").each(["success", "timeout"])(
   "retains %s output and requires reopening after a symlink command",
   async (outcome) => {
     const [target] = await createBinarySessionTargets();
@@ -270,13 +347,16 @@ it.each(["success", "timeout"])(
       createToolResultDelivery(2 * 1024 * 1024),
       recordEvidence,
       undefined,
-      () => session.invalidateSnapshotForExternalMutation(),
+      undefined,
       (path, signal, operation, rebindFailure) =>
         session.withAdmittedExternalMutation(
           path,
           signal,
           operation,
           rebindFailure,
+          "execute_rizin_command",
+          undefined,
+          "provider-dispatch",
         ),
     );
     const invoke = handler("execute_rizin_command");
