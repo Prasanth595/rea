@@ -2,7 +2,7 @@
 name: reverse-engineer-anything
 description: Reverse engineer native, managed, Electron/JavaScript, packaged, firmware, and browser targets with REA. Use shipped-artifact or requested runtime evidence to explain features, compare versions, decompile code, or guide a reconstruction. Skip REA for ordinary source-repository architecture analysis.
 metadata:
-  version: "43"
+  version: "44"
 ---
 
 # REA
@@ -350,6 +350,15 @@ Before finishing, revisit the original checklist. Mark each question as
 answered, partially answered, or unresolved based on its evidence; keep
 bounded negative searches bounded, and do not describe a broad investigation
 as complete while required questions remain open.
+
+When the user wants multiple agents to investigate independent questions through
+Coordo, read [the Coordo handoff workflow](references/coordo-multi-agent.md).
+It creates scoped ledger tasks that point to an existing private Evidence bundle;
+it does not run other agents or broaden authority to inspect the target.
+When the user wants Coordo to launch workers and an independent reviewer without
+manual prompt relays, read [the coordinated investigation workflow](references/coordo-investigation-v2.md).
+It requires explicit `--apply`, uses bounded parallel dispatch, and leaves target
+selection and runtime authorization with the original request.
 
 ## Read only the relevant guide
 
