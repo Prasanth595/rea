@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { jsonValueSchema } from "../jsonValue.js";
+import { machoSliceEncryptionSchema } from "../apple/machoEncryption.js";
 
 const hexAddress = z.string().regex(/^0x[a-fA-F0-9]+$/u);
 const coverage = <Schema extends z.ZodType>(item: Schema) =>
@@ -139,9 +140,31 @@ export const inspectMachoSchema = z.object({
   imports: coverage(symbolSchema),
   exports: coverage(symbolSchema),
   segments: coverage(segmentSchema),
+  encryption: coverage(machoSliceEncryptionSchema).describe(
+    "LC_ENCRYPTION_INFO(_64) status of every slice, read from load commands only.",
+  ),
   provenance: z.array(nativeCommandInvocationSchema),
   limitations: z.array(z.string()),
 });
+
+/**
+ * Retained inspect_macho Evidence, including results recorded before
+ * `encryption` was reported. Not recorded is unknown, never evidence that no
+ * slice is encrypted.
+ */
+export const retainedInspectMachoSchema = inspectMachoSchema
+  .extend({ encryption: inspectMachoSchema.shape.encryption.optional() })
+  .transform(({ encryption, ...report }) => ({
+    ...report,
+    encryption: encryption ?? {
+      items: [],
+      total: null,
+      exhaustive: false,
+      limitations: [
+        "This inspect_macho Evidence predates encryption reporting; slice encryption status is unknown.",
+      ],
+    },
+  }));
 
 export const inspectSignatureSchema = z.object({
   signed: z.boolean(),

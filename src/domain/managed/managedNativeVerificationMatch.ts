@@ -5,7 +5,7 @@ import canonicalize from "canonicalize";
 
 import { parseEvidence } from "../evidence.js";
 import { functionDossierSchema } from "../hopperValues.js";
-import { inspectMachoSchema } from "../native/nativeInspection.js";
+import { retainedInspectMachoSchema } from "../native/nativeInspection.js";
 import type { ManagedNativeBoundaryInspection } from "./managedArtifact.js";
 import type { JsonValue } from "../jsonValue.js";
 import {
@@ -43,7 +43,7 @@ const symbolsForEvidence = (
   readonly symbols: readonly NativeSymbol[];
 } => {
   if (evidence.operation === "inspect_macho") {
-    const result = inspectMachoSchema.parse(evidence.normalized_result);
+    const result = retainedInspectMachoSchema.parse(evidence.normalized_result);
     return {
       supported: true,
       symbols: result.exports.items.map((symbol) => ({

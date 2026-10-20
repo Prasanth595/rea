@@ -55,6 +55,10 @@ const MACHO_HEADER_MAGICS: readonly number[] = [
   0xfeedface, 0xfeedfacf, 0xcefaedfe, 0xcffaedfe,
 ];
 
+/** Whether a big-endian slice prefix is a Mach-O header magic in either byte order. */
+export const isMachoHeaderMagic = (magic: number | null | undefined): boolean =>
+  magic != null && MACHO_HEADER_MAGICS.includes(magic);
+
 /** Parse a bounded FAT header and table without treating the magic alone as proof. */
 export const readFatContainerHeader = (
   bytes: Uint8Array,
@@ -134,8 +138,7 @@ export const classifyFatContainerIdentity = (
   for (const slice of validRanges) {
     const magic = sliceHeaderAt(slice.offset);
     if (magic === undefined) missingHeaders.push(slice.offset);
-    else if (magic !== null && MACHO_HEADER_MAGICS.includes(magic))
-      observedMachO = true;
+    else if (isMachoHeaderMagic(magic)) observedMachO = true;
   }
   if (observedMachO) {
     return invalidRange === undefined
