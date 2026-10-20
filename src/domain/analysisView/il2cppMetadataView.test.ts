@@ -60,6 +60,11 @@ const report: Il2cppMetadata = {
   events: [],
   parameters: [{ name: "times", method: 0 }],
   string_literals: [{ value: "Go", value_base64: null }],
+  binary: null,
+  method_addresses: [],
+  return_types: [],
+  field_types: [],
+  parameter_types: [],
   limitations: [],
 };
 
@@ -97,6 +102,10 @@ it("validates a sealed parent once across pages and keeps counts exact", () => {
         events: 0,
         parameters: 1,
         string_literals: 1,
+        method_addresses: 0,
+        return_types: 0,
+        field_types: 0,
+        parameter_types: 0,
       },
     });
   }

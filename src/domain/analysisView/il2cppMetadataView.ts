@@ -10,6 +10,8 @@ import {
   il2cppMetadataSectionSchema,
   il2cppMetadataParameterSchema,
   il2cppMetadataStringLiteralSchema,
+  il2cppMethodAddressSchema,
+  il2cppTypeReferenceSchema,
   il2cppMetadataObjectSchema,
   il2cppMetadataSchema,
   il2cppMetadataTypeSchema,
@@ -37,6 +39,16 @@ const countsSchema = z.strictObject({
   events: z.number().int().nonnegative(),
   parameters: z.number().int().nonnegative(),
   string_literals: z.number().int().nonnegative(),
+  method_addresses: z.number().int().nonnegative(),
+  /** method_addresses rows per state; all zero without a linked binary. */
+  method_address_states: z.strictObject({
+    code: z.number().int().nonnegative(),
+    no_body: z.number().int().nonnegative(),
+    unknown: z.number().int().nonnegative(),
+  }),
+  return_types: z.number().int().nonnegative(),
+  field_types: z.number().int().nonnegative(),
+  parameter_types: z.number().int().nonnegative(),
 });
 
 export const il2cppMetadataSummarySchema = il2cppMetadataObjectSchema
@@ -50,6 +62,10 @@ export const il2cppMetadataSummarySchema = il2cppMetadataObjectSchema
     events: true,
     parameters: true,
     string_literals: true,
+    method_addresses: true,
+    return_types: true,
+    field_types: true,
+    parameter_types: true,
   })
   .extend({ counts: countsSchema });
 
@@ -69,6 +85,12 @@ const parameterRowSchema = il2cppMetadataParameterSchema.extend({
   index: indexSchema,
 });
 const stringLiteralRowSchema = il2cppMetadataStringLiteralSchema.extend({
+  index: indexSchema,
+});
+const methodAddressRowSchema = il2cppMethodAddressSchema.extend({
+  index: indexSchema,
+});
+const typeReferenceRowSchema = il2cppTypeReferenceSchema.extend({
   index: indexSchema,
 });
 const indexPage = {
@@ -126,6 +148,19 @@ export const il2cppMetadataViewRequestSchema = z.discriminatedUnion(
       collection: z.literal("string_literals"),
       fields: z.array(stringLiteralRowSchema.keyof()).optional(),
     }),
+    z.strictObject({
+      ...indexPage,
+      collection: z.literal("method_addresses"),
+      fields: z.array(methodAddressRowSchema.keyof()).optional(),
+    }),
+    ...(["return_types", "field_types", "parameter_types"] as const).map(
+      (collection) =>
+        z.strictObject({
+          ...indexPage,
+          collection: z.literal(collection),
+          fields: z.array(typeReferenceRowSchema.keyof()).optional(),
+        }),
+    ),
   ],
 );
 
@@ -137,6 +172,8 @@ export const il2cppMetadataViewItemsSchema = z.union([
   z.array(memberRowSchema.partial().required({ index: true })),
   z.array(parameterRowSchema.partial().required({ index: true })),
   z.array(stringLiteralRowSchema.partial().required({ index: true })),
+  z.array(methodAddressRowSchema.partial().required({ index: true })),
+  z.array(typeReferenceRowSchema.partial().required({ index: true })),
 ]);
 
 export const il2cppMetadataViewContextSchema = z.strictObject({
@@ -188,6 +225,19 @@ const parseMetadataReport = (
       events: report.events.length,
       parameters: report.parameters.length,
       string_literals: report.string_literals.length,
+      method_addresses: report.method_addresses.length,
+      method_address_states: report.method_addresses.reduce(
+        (states, row) => {
+          if (row.state === "code") states.code++;
+          else if (row.state === "no-body") states.no_body++;
+          else states.unknown++;
+          return states;
+        },
+        { code: 0, no_body: 0, unknown: 0 },
+      ),
+      return_types: report.return_types.length,
+      field_types: report.field_types.length,
+      parameter_types: report.parameter_types.length,
     },
   };
   if (reusable) checkedReports.set(key, checked);
@@ -298,7 +348,7 @@ export const projectIl2cppMetadataView = (
           path: ["view"],
           reason: "invalid_value",
           message:
-            "IL2CPP metadata Evidence supports summary and selected sections, images, types, methods, member, parameter and string literal pages.",
+            "IL2CPP metadata Evidence supports summary and selected sections, images, types, methods, member, parameter, string literal, method address and type reference pages.",
         },
       ]),
     );
@@ -331,6 +381,10 @@ export const projectIl2cppMetadataView = (
     events,
     parameters,
     string_literals,
+    method_addresses,
+    return_types,
+    field_types,
+    parameter_types,
     ...identity
   } = report;
   const allRows = {
@@ -343,6 +397,10 @@ export const projectIl2cppMetadataView = (
     events,
     parameters,
     string_literals,
+    method_addresses,
+    return_types,
+    field_types,
+    parameter_types,
   };
   const shared = {
     parent_evidence_id: parent.evidenceId,
@@ -351,7 +409,9 @@ export const projectIl2cppMetadataView = (
     artifact: { path: report.artifact.path, sha256: report.artifact.sha256 },
     limitations: [...parent.limitations],
     unknowns: [
-      "Names come from unencrypted metadata only; native code addresses and runtime registration remain unknown.",
+      identity.binary === null
+        ? "Names come from unencrypted metadata only; native code addresses and runtime registration remain unknown."
+        : "Addresses come from static binary tables; runtime behavior and generic instance code remain unknown.",
       ...(parent.subject == null
         ? [
             "The parent has no recorded subject; its normalized artifact identity cannot be cross-checked against a subject digest.",

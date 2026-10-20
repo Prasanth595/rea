@@ -125,6 +125,12 @@ try {
       events: report.events.length,
       parameters: report.parameters.length,
       string_literals: report.string_literals.length,
+      // The verifier selects no binary, so nothing is linked.
+      method_addresses: 0,
+      method_address_states: { code: 0, no_body: 0, unknown: 0 },
+      return_types: 0,
+      field_types: 0,
+      parameter_types: 0,
     });
     const page = analysisViewResultSchema.parse(
       (

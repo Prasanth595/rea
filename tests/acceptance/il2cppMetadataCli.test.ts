@@ -24,6 +24,14 @@ import {
   FIXTURE_METHODS,
   FIXTURE_TYPES,
 } from "../fixtures/il2cpp/metadata.js";
+import {
+  createElfFixture,
+  createIl2cppBinaryFixture,
+  createUniversalFixture,
+  FIXTURE_BINARY_BASE,
+  FIXTURE_METHOD_ADDRESSES,
+  FIXTURE_RETURN_TYPE_NAME,
+} from "../fixtures/il2cpp/binary.js";
 import { connectLocalToolsMcp } from "../fixtures/localToolsMcp.js";
 import { parseMcpToolError } from "../fixtures/mcpToolError.js";
 import { createTestTempDirectory } from "../fixtures/temporaryDirectory.js";
@@ -93,8 +101,14 @@ cliTest(
       events: 0,
       parameters: 1,
       string_literals: 2,
+      method_addresses: 0,
+      method_address_states: { code: 0, no_body: 0, unknown: 0 },
+      return_types: 0,
+      field_types: 0,
+      parameter_types: 0,
     });
     expect(view.summary).not.toHaveProperty("sections");
+    expect(view.summary.binary).toBeNull();
     expect(view.summary.index_widths).toEqual(report.index_widths);
 
     // Pages come from retained Evidence, not the file.
@@ -431,4 +445,225 @@ cliTest.skipIf(process.platform === "win32")(
     expect(read.stdout).toContain(saved.value.records[0]?.evidence_id);
   },
   30000,
+);
+
+cliTest(
+  "links method addresses from a selected binary slice through CLI and MCP pages",
+  async ({ cli }) => {
+    const root = await createTestTempDirectory("rea-il2cpp-binary-");
+    const path = join(root, "global-metadata.dat");
+    const binaryPath = join(root, "GameAssembly.dylib");
+    await writeFile(path, createIl2cppMetadataFixture().bytes);
+    await writeFile(
+      binaryPath,
+      createUniversalFixture([
+        { cpu: 0x0100000c, bytes: createIl2cppBinaryFixture() },
+      ]),
+    );
+    const expected = FIXTURE_METHOD_ADDRESSES.map((address) =>
+      typeof address !== "bigint"
+        ? { state: address, address: null, rva: null }
+        : {
+            state: "code",
+            address: `0x${address.toString(16)}`,
+            rva: `0x${(address - FIXTURE_BINARY_BASE).toString(16)}`,
+          },
+    );
+    const result = await cli.run({
+      arguments: [
+        "inspect-il2cpp-metadata",
+        path,
+        "--binary",
+        binaryPath,
+        "--architecture",
+        "arm64",
+        "--json",
+      ],
+    });
+    expect(result.exitCode, result.stderr).toBe(0);
+    const report = il2cppMetadataSchema.parse(
+      toolContract("inspect_il2cpp_metadata").outputSchema.parse(result.json)
+        .normalized_result,
+    );
+    expect(report.method_addresses).toEqual(expected);
+    expect(report.return_types.map((row) => row.name)).toEqual(
+      Array.from({ length: 5 }, () => FIXTURE_RETURN_TYPE_NAME),
+    );
+    expect(report.binary).toMatchObject({
+      format: "macho",
+      architecture: "arm64",
+      image_base: "0x100000000",
+    });
+
+    const { client, call } = await connectLocalToolsMcp();
+    const missing = await call("inspect_il2cpp_metadata", {
+      path,
+      binary_path: binaryPath,
+    });
+    expect(parseMcpToolError(missing).error).toMatchObject({
+      code: "unsupported_target",
+      message: expect.stringContaining("slice-selection-required"),
+    });
+    const summarized = await call("inspect_il2cpp_metadata", {
+      path,
+      binary_path: binaryPath,
+      binary_architecture: "arm64",
+      detail: "summary",
+    });
+    expect(summarized.isError, JSON.stringify(summarized)).not.toBe(true);
+    const view = il2cppMetadataSummaryViewResultSchema.parse(
+      parseEvidence(summarized.structuredContent).normalized_result,
+    );
+    expect(view.summary.counts.method_addresses).toBe(5);
+    expect(view.summary.counts.method_address_states).toEqual({
+      code: 4,
+      no_body: 1,
+      unknown: 0,
+    });
+    const page = await call("inspect_analysis_view", {
+      source: {
+        kind: "retained-evidence",
+        evidence_id: view.parent_evidence_id,
+      },
+      view: {
+        kind: "il2cpp-metadata",
+        collection: "method_addresses",
+        offset: 2,
+      },
+    });
+    const projected = analysisViewResultSchema.parse(
+      parseEvidence(page.structuredContent).normalized_result,
+    );
+    if (projected.kind !== "il2cpp-metadata")
+      throw new Error("Wrong IL2CPP page kind");
+    expect(projected.items).toEqual(
+      expected.slice(2).map((row, offset) => ({ index: offset + 2, ...row })),
+    );
+    await client.ping();
+  },
+  30000,
+);
+
+cliTest(
+  "marks a module array found through an x86-64 instruction as derived",
+  async ({ cli }) => {
+    const root = await createTestTempDirectory("rea-il2cpp-inlined-");
+    const path = join(root, "global-metadata.dat");
+    const binaryPath = join(root, "GameAssembly.so");
+    await writeFile(path, createIl2cppMetadataFixture().bytes);
+    await writeFile(
+      binaryPath,
+      createElfFixture(
+        createIl2cppBinaryFixture({
+          codeRegistration: false,
+          codeReference: true,
+        }),
+        { machine: 62 },
+      ),
+    );
+    const result = await cli.run({
+      arguments: [
+        "inspect-il2cpp-metadata",
+        path,
+        "--binary",
+        binaryPath,
+        "--json",
+      ],
+    });
+    expect(result.exitCode, result.stderr).toBe(0);
+    const report = il2cppMetadataSchema.parse(
+      toolContract("inspect_il2cpp_metadata").outputSchema.parse(result.json)
+        .normalized_result,
+    );
+    expect(report.binary?.code_gen_modules_field).toBeNull();
+    expect(
+      report.limitations.some((line) =>
+        line.includes("no static CodeRegistration"),
+      ),
+    ).toBe(true);
+  },
+  30000,
+);
+
+cliTest(
+  "writes Ghidra function seeds for a linked ELF and refuses to overwrite them",
+  async ({ cli }) => {
+    const root = await createTestTempDirectory("rea-il2cpp-seeds-");
+    const path = join(root, "global-metadata.dat");
+    const binaryPath = join(root, "libil2cpp.so");
+    const seeds = join(root, "seeds.tsv");
+    const shifted = join(root, "shifted.tsv");
+    await writeFile(path, createIl2cppMetadataFixture().bytes);
+    await writeFile(binaryPath, createElfFixture(createIl2cppBinaryFixture()));
+    const run = (output: string, extra: readonly string[] = []) =>
+      cli.run({
+        arguments: [
+          "inspect-il2cpp-metadata",
+          path,
+          "--binary",
+          binaryPath,
+          "--ghidra-seeds",
+          output,
+          ...extra,
+          "--json",
+        ],
+      });
+
+    const linked = await run(seeds);
+    expect(linked.exitCode, linked.stderr).toBe(0);
+    // This ELF is linked at the fixture base, so Ghidra keeps that base.
+    expect(await readFile(seeds, "utf8")).toBe(
+      [
+        "0x100000200\tfunction\tGame.Player$$.ctor",
+        "0x100000210\tfunction\tGame.Player$$Update",
+        "0x100000220\tfunction\tGame.Player.Slot$$Add",
+        "0x100000230\tfunction\tSystem.Größe$$.ctor",
+        "",
+      ].join("\n"),
+    );
+
+    const moved = await run(shifted, ["--seed-base", "0x100000"]);
+    expect(moved.exitCode, moved.stderr).toBe(0);
+    expect((await readFile(shifted, "utf8")).split("\n")[0]).toBe(
+      "0x100200\tfunction\tGame.Player$$.ctor",
+    );
+
+    await writeFile(seeds, "kept\n");
+    const again = await run(seeds);
+    expect(again.exitCode).not.toBe(0);
+    expect(again.json).toMatchObject({
+      code: "invalid_request",
+      details: {
+        issues: [
+          {
+            path: ["ghidra_seeds"],
+            message: expect.stringContaining("already exists"),
+          },
+        ],
+      },
+    });
+    expect(await readFile(seeds, "utf8")).toBe("kept\n");
+
+    const unlinked = await cli.run({
+      arguments: [
+        "inspect-il2cpp-metadata",
+        path,
+        "--ghidra-seeds",
+        join(root, "unlinked.tsv"),
+        "--json",
+      ],
+    });
+    expect(unlinked.exitCode).not.toBe(0);
+    expect(unlinked.json).toMatchObject({
+      code: "invalid_request",
+      details: {
+        issues: [
+          {
+            path: ["ghidra_seeds"],
+            message: expect.stringContaining("needs --binary"),
+          },
+        ],
+      },
+    });
+  },
 );
