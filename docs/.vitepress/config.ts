@@ -70,6 +70,7 @@ export default defineConfig({
           { text: "Ghidra NativeAOT", link: "/ghidra-nativeaot" },
           { text: "Ghidra PowerPC", link: "/ghidra-ppc" },
           { text: "Ghidra semantics", link: "/ghidra-provider" },
+          { text: "Ghidra project cache", link: "/ghidra-project-cache" },
         ],
       },
       {

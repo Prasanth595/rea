@@ -39,6 +39,54 @@ it("does not treat ordinary error-looking data or nested Evidence as command fai
   ).toBe(false);
 });
 
+it("classifies the cache maintenance error envelope as a command failure", async () => {
+  const envelope = {
+    error: "Cache removal failed",
+    code: "artifact_operation_failed",
+    category: "execution_failure",
+    message: "Stored Ghidra project manifest is invalid",
+    retryable: false,
+    remediation: {
+      action: "Remove the reported corrupt entry with cache-remove.",
+    },
+    details: { reason: "manifest", path: "/cache/key" },
+  } as const;
+  expect(isCliOperationFailure(envelope)).toBe(true);
+  const previousExitCode = process.exitCode;
+  try {
+    await logCliCommand(
+      silentLogger,
+      CLI_COMMANDS.cacheRemove,
+      async () => envelope,
+    );
+    expect(process.exitCode).toBe(1);
+  } finally {
+    process.exitCode = previousExitCode;
+  }
+});
+
+it("lets a command-specific predicate add failure cases without masking them", async () => {
+  const envelope = {
+    error: "Cache verification failed",
+    ...projectAnalysisError(
+      new ConfigurationError("Invalid REA environment configuration"),
+    ),
+  };
+  expect(isCliOperationFailure(envelope)).toBe(true);
+  const previousExitCode = process.exitCode;
+  try {
+    await logCliCommand(
+      silentLogger,
+      CLI_COMMANDS.cacheVerify,
+      async () => envelope,
+      (value) => isCliOperationFailure(value) || false,
+    );
+    expect(process.exitCode).toBe(1);
+  } finally {
+    process.exitCode = previousExitCode;
+  }
+});
+
 describe("CLI command outcome classification", () => {
   it("returns nonzero for the UpdateResult failure variant", async () => {
     const installation = {

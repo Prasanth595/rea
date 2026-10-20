@@ -59,6 +59,19 @@ export const ghidraPinnedLanguage = (
   ghidraRiscvLanguageOverride(target) ??
   ghidraPowerPcLanguage(target);
 
+/** Reason an existing project cannot open this target, or null when it can. */
+export const ghidraExistingProjectUnsupportedReason = (
+  target: BinaryTarget,
+): string | null => {
+  if (target.format === "dos-mz" || target.format === "dos-com")
+    return "An existing Ghidra project cannot be combined with a DOS import.";
+  if (target.format === "raw-binary")
+    return "An existing Ghidra project cannot be combined with a raw-binary import.";
+  if (isGhidraPspTarget(target))
+    return "An existing Ghidra project cannot be combined with a PSP ELF import.";
+  return null;
+};
+
 /** Resolve version-bound, deterministic semantics before Ghidra imports a target. */
 export const resolveGhidraAnalysisProfile = async (
   target: BinaryTarget,
@@ -68,6 +81,7 @@ export const resolveGhidraAnalysisProfile = async (
   signal?: AbortSignal,
   languageOverride?: GhidraLanguageOverride,
   disabledAnalyzers?: readonly string[],
+  existingProject?: boolean,
 ): Promise<Result<AnalysisProfileResolution, AnalysisError>> => {
   if (signal?.aborted === true)
     return Promise.resolve(
@@ -79,6 +93,25 @@ export const resolveGhidraAnalysisProfile = async (
     return Promise.resolve(
       err(new ProviderAdapterError(identity.id, "resolve_analysis_profile")),
     );
+  if (existingProject === true) {
+    if (languageOverride !== undefined || (disabledAnalyzers?.length ?? 0) > 0)
+      return err(
+        new AnalysisUnsupportedTargetError(
+          "resolve_analysis_profile",
+          target.path,
+          "Existing Ghidra projects retain their imported language and analysis; caller-selected import overrides do not apply.",
+        ),
+      );
+    const reason = ghidraExistingProjectUnsupportedReason(target);
+    if (reason !== null)
+      return err(
+        new AnalysisUnsupportedTargetError(
+          "resolve_analysis_profile",
+          target.path,
+          reason,
+        ),
+      );
+  }
   const mipsReason = ghidraProcessorUnsupportedReason(target);
   if (mipsReason !== null)
     return Promise.resolve(
@@ -227,7 +260,10 @@ export const resolveGhidraAnalysisProfile = async (
         available_architectures: [
           ...(target.availableArchitectures ?? []),
         ].sort(),
-        import_mode: "ephemeral-source-immutable",
+        import_mode:
+          existingProject === true
+            ? "existing-project-copy"
+            : "ephemeral-source-immutable",
         ...(target.format === "pe"
           ? { pdb_observations: "program-info-v5" }
           : {}),

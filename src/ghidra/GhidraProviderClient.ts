@@ -47,7 +47,10 @@ import { ProviderAdapterError } from "../domain/providerAdapterError.js";
 import { err, ok, type Result } from "../domain/result.js";
 import type { Logger } from "pino";
 import { GhidraClient } from "./GhidraClient.js";
-import type { GhidraClientOptions } from "./GhidraClientTypes.js";
+import type {
+  GhidraClientOptions,
+  GhidraProjectPersistence,
+} from "./GhidraClientTypes.js";
 import {
   isGhidraFunctionOperation,
   parseGhidraFunctionInput,
@@ -82,6 +85,7 @@ import { GhidraHeadlessLauncher } from "./GhidraLauncher.js";
 import { attestGhidraNativeLoadImage } from "./GhidraLoadImageAttest.js";
 import type { NativeAotPeResult } from "../domain/native/nativeAotPe.js";
 import { GhidraNativeAotSnapshotOwner } from "./GhidraNativeAotSnapshotOwner.js";
+import type { GhidraProjectCacheRootPreparation } from "./projectCache/GhidraProjectCacheRoot.js";
 import {
   GHIDRA_PROVIDER_IDENTITY,
   healthLimitations,
@@ -129,10 +133,22 @@ export const createGhidraProviderClient = (input: {
   readonly admission: GhidraClientAdmission;
   readonly context?: AnalysisClientContext;
   readonly installation: GhidraInstallationInspection;
+  /** Managed project-cache wiring resolved by the provider. */
+  readonly projectPersistence?: GhidraProjectPersistence;
   readonly signal: AbortSignal;
 }): Result<AnalysisClient, AnalysisError> => {
   const { config, logger, clientFactory, context, installation } = input;
   const { target, profile } = input.admission;
+  const projectPersistence = input.projectPersistence;
+  const reuseProject = projectPersistence?.reuse === true;
+  const storedProject = reuseProject
+    ? projectPersistence?.reservation
+    : undefined;
+  const saveProject = projectPersistence?.publishable === true;
+  // Import-time selections apply only to a fresh import; a stored project
+  // already carries its language, seeds and disabled analyzers.
+  const importSelectionsApply =
+    config.ghidraExistingProject === undefined && !reuseProject;
   const prerequisites = ghidraClientPrerequisites(profile, installation);
   if (!prerequisites.ok) return err(prerequisites.error);
   const committedProfile = prerequisites.value.profile;
@@ -350,6 +366,17 @@ export const createGhidraProviderClient = (input: {
           import.meta.url,
         ),
       ),
+      ...(config.ghidraExistingProject !== undefined
+        ? { existingProject: config.ghidraExistingProject }
+        : storedProject?.programName === undefined
+          ? {}
+          : {
+              existingProject: {
+                projectPath: storedProject.entryPath,
+                programName: storedProject.programName,
+              },
+            }),
+      ...(saveProject ? { saveImportedProject: true as const } : {}),
       ...(pspExtension?.success === true
         ? { pspExtension: pspExtension.data }
         : {}),
@@ -365,13 +392,15 @@ export const createGhidraProviderClient = (input: {
               baseAddr: target.entryPoint,
             },
           }),
-      ...(importLanguage === undefined
+      ...(importLanguage === undefined || !importSelectionsApply
         ? {}
         : { languageOverride: importLanguage }),
-      ...(config.ghidraDisabledAnalyzers === undefined
+      ...(config.ghidraDisabledAnalyzers === undefined || !importSelectionsApply
         ? {}
         : { disabledAnalyzers: config.ghidraDisabledAnalyzers }),
-      ...(seeds === undefined ? {} : { analysisSeeds: seeds }),
+      ...(seeds === undefined || !importSelectionsApply
+        ? {}
+        : { analysisSeeds: seeds }),
       platform: installation.platform,
       ...(extensions.length === 0 ? {} : { analysisExtensions: extensions }),
     }),
@@ -411,6 +440,7 @@ export const createGhidraProviderClient = (input: {
         }
       : {}),
     ...(context === undefined ? {} : { runId: context.runId }),
+    ...(projectPersistence === undefined ? {} : { projectPersistence }),
     logger: logger.child({ layer: "ghidra-bridge" }),
   });
   // Startup failures retain installation guidance; only a previously running
@@ -476,6 +506,21 @@ export const createGhidraProviderClient = (input: {
   const sessionLimitations = (): readonly string[] => [
     ...providerLimitations,
     ...targetLimitations,
+    ...(reuseProject
+      ? [
+          "Ghidra analysis was reused from a local project cache; this session did not import or re-analyze the target. The stored program is bound to the target, provider, JVM, and import profile it was built from.",
+        ]
+      : []),
+    ...(projectPersistence?.rejectedEntry === undefined
+      ? []
+      : [rejectedProjectLimitation(projectPersistence.rejectedEntry)]),
+    ...(projectPersistence?.reservation.rootPreparation.status === "repaired"
+      ? [
+          repairedProjectRootLimitation(
+            projectPersistence.reservation.rootPreparation,
+          ),
+        ]
+      : []),
     ...(psp ? GHIDRA_PSP_LIMITATIONS : []),
     ...softFloatLimitations,
     ...ghidraExtensionLimitations(extensions),
@@ -1112,6 +1157,29 @@ const ghidraStartupTimeoutGuidance = (timeoutMs: number) => ({
   userMessage: `Ghidra did not finish importing and analyzing the target within its ${String(timeoutMs)} ms startup deadline (REA_GHIDRA_STARTUP_TIMEOUT_MS).`,
   remediationAction: `Large binaries can need longer: set REA_GHIDRA_STARTUP_TIMEOUT_MS above ${String(timeoutMs)} in the environment that starts REA, or skip expensive analyzers with REA_GHIDRA_DISABLED_ANALYZERS, then open the target again. An MCP client's own tool-call timeout is separate and may also need raising.`,
 });
+
+/** Explain why a stored project was not reused by this session. */
+const rejectedProjectLimitation = (
+  rejected: NonNullable<GhidraProjectPersistence["rejectedEntry"]>,
+): string => {
+  const where = rejected.path === undefined ? "" : ` at ${rejected.path}`;
+  return rejected.discarded
+    ? `A stored Ghidra project was discarded (${rejected.reason}${where}); this session rebuilt it with a fresh import.`
+    : `A stored Ghidra project was not reused (${rejected.reason}${where}) because another session is still using it; this session rebuilt it with a fresh import.`;
+};
+
+/** Explain that the cache root was rebuilt as a private directory. */
+const repairedProjectRootLimitation = (
+  preparation: Extract<
+    GhidraProjectCacheRootPreparation,
+    { readonly status: "repaired" }
+  >,
+): string =>
+  `The Ghidra project cache root was not owner-only and was rebuilt as a private directory; ${preparation.preservedEntries} stored item(s) were preserved.${
+    preparation.leftoverRoot === undefined
+      ? ""
+      : ` The previous root could not be removed and still holds a copy of them at ${preparation.leftoverRoot}.`
+  }`;
 
 /** A provider already observed as running can be restarted by reopening. */
 const exitedProviderMessage = (

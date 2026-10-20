@@ -75,34 +75,38 @@ describe("bounded Ghidra PowerPC admission", () => {
     );
   });
 
-  it("lets a configured language replace the lane default", async () => {
-    const installDir = await createTestTempDirectory("rea-ghidra-ppc-");
-    const languages = join(
-      installDir,
-      "Ghidra/Processors/PowerPC/data/languages",
-    );
-    await mkdir(languages, { recursive: true });
-    await writeFile(join(languages, "ppc.ldefs"), PPC_LDEFS);
-    const ghidra = new GhidraProvider(
-      configFor({
-        GHIDRA_INSTALL_DIR: installDir,
-        REA_GHIDRA_LANGUAGE_ID: "PowerPC:BE:32:e500",
-      }),
-      silentLogger,
-      {},
-      host,
-    );
-    const resolved = await ghidra.resolveAnalysisProfile(target());
-    if (!resolved.ok) throw resolved.error;
-    const parameters = resolved.value.profile?.parameters ?? {};
-    expect(parameters).toMatchObject({
-      language_id: "PowerPC:BE:32:e500",
-      language_selection: "configured-v1",
-    });
-    expect(ghidraProfileLanguageOverride(parameters)).toEqual({
-      languageId: "PowerPC:BE:32:e500",
-    });
-  });
+  // Uses a real POSIX temp install dir with the shared Linux fixture.
+  it.skipIf(process.platform === "win32")(
+    "lets a configured language replace the lane default",
+    async () => {
+      const installDir = await createTestTempDirectory("rea-ghidra-ppc-");
+      const languages = join(
+        installDir,
+        "Ghidra/Processors/PowerPC/data/languages",
+      );
+      await mkdir(languages, { recursive: true });
+      await writeFile(join(languages, "ppc.ldefs"), PPC_LDEFS);
+      const ghidra = new GhidraProvider(
+        configFor({
+          GHIDRA_INSTALL_DIR: installDir,
+          REA_GHIDRA_LANGUAGE_ID: "PowerPC:BE:32:e500",
+        }),
+        silentLogger,
+        {},
+        host,
+      );
+      const resolved = await ghidra.resolveAnalysisProfile(target());
+      if (!resolved.ok) throw resolved.error;
+      const parameters = resolved.value.profile?.parameters ?? {};
+      expect(parameters).toMatchObject({
+        language_id: "PowerPC:BE:32:e500",
+        language_selection: "configured-v1",
+      });
+      expect(ghidraProfileLanguageOverride(parameters)).toEqual({
+        languageId: "PowerPC:BE:32:e500",
+      });
+    },
+  );
 
   it("commits header flags so a changed interpretation changes the profile", async () => {
     const ghidra = new GhidraProvider(config, silentLogger, {}, host);

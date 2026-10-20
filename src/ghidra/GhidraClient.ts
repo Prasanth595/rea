@@ -61,6 +61,7 @@ import {
 import {
   isGhidraShutdownAcknowledgement,
   parseGhidraSessionInfo,
+  GHIDRA_MUTATING_OPERATIONS,
   type GhidraSessionInfo,
 } from "./GhidraSessionValues.js";
 import { createGhidraTargetSnapshot } from "./GhidraTargetSnapshot.js";
@@ -105,6 +106,10 @@ import { completeGhidraStartupHandshake } from "./GhidraClientStartup.js";
 import { ghidraSessionRoot } from "./GhidraSessionRoot.js";
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
+// After the bridge acknowledges shutdown it still has to finish saving the
+// imported project before the JVM exits. A graceful close waits this long for
+// that natural exit before stopping the process; a forced stop stays prompt.
+const PROJECT_SAVE_GRACE_MS = 10_000;
 const SESSION_ROOT = ghidraSessionRoot();
 
 type GhidraStartupAttempt = SharedStartupAttempt<GhidraStartResult>;
@@ -151,6 +156,10 @@ export class GhidraClient {
   #lastDiagnostics: Readonly<Record<string, JsonValue>> = {};
   #startupAttempt: GhidraStartupAttempt | undefined;
   #closePromise: Promise<void> | undefined;
+  /** Post-analysis handshake info, retained for project-cache publishing. */
+  #sessionInfo: GhidraSessionInfo | undefined;
+  /** Set when a session mutation makes its edited program unfit to store. */
+  #clientMutated = false;
   readonly #failure = bindGhidraSessionFailure(
     () => this.#diagnostics(),
     (value, incomplete) => this.#redactAuthentication(value, incomplete),
@@ -372,6 +381,7 @@ export class GhidraClient {
   ): Promise<Result<JsonValue, GhidraSessionError>> {
     const started = await this.start(options.signal, options.progress);
     if (!started.ok) return started;
+    this.#noteMutation(operation);
     return this.#requestQueue.run(
       operation,
       parameters,
@@ -386,6 +396,7 @@ export class GhidraClient {
     options: { readonly signal?: AbortSignal } = {},
   ): Promise<Result<JsonValue, GhidraSessionError> | undefined> {
     if (!this.isReady()) return Promise.resolve(undefined);
+    this.#noteMutation(operation);
     return this.#requestQueue.run(
       operation,
       parameters,
@@ -936,6 +947,7 @@ export class GhidraClient {
     }
     if (deadline.signal.aborted) return this.#startupInterrupted(deadline);
     this.#startupOutputCheckpoint = undefined;
+    this.#sessionInfo = completed.value;
     this.#requestQueue.reopen();
     return completed;
   }
@@ -1043,6 +1055,39 @@ export class GhidraClient {
     }
   }
 
+  /**
+   * Ask the bridge to shut down and report whether it acknowledged. A forced
+   * stop never requests shutdown, so an interrupted save is never published.
+   */
+  async #requestGracefulShutdown(
+    forceStop: boolean,
+    socket: Socket | undefined,
+  ): Promise<boolean> {
+    if (forceStop || socket === undefined || socket.destroyed) return false;
+    const shutdown = await this.#wire
+      .request("shutdown", {}, { timeoutMs: SHUTDOWN_TIMEOUT_MS })
+      .catch((cause: unknown) =>
+        err(this.#failure("process", "Ghidra shutdown request failed", cause)),
+      );
+    const confirmed =
+      shutdown.ok && isGhidraShutdownAcknowledgement(shutdown.value);
+    if (!confirmed)
+      this.#logger.warn(
+        {
+          status: shutdown.ok ? "invalid-acknowledgement" : "failed",
+          ...(shutdown.ok
+            ? {}
+            : {
+                kind: shutdown.error.kind,
+                message: shutdown.error.message,
+                diagnostics: shutdown.error.diagnostics,
+              }),
+        },
+        "Ghidra bridge shutdown was not confirmed",
+      );
+    return confirmed;
+  }
+
   async #cleanup(forceStop = false): Promise<void> {
     this.#closing = true;
     let forcedStopFailure: { readonly cause: unknown } | undefined;
@@ -1051,36 +1096,24 @@ export class GhidraClient {
         this.#failure("process", "Ghidra session closed"),
       );
       const socket = this.#socket;
-      if (!forceStop && socket !== undefined && !socket.destroyed) {
-        const shutdown = await this.#wire
-          .request("shutdown", {}, { timeoutMs: SHUTDOWN_TIMEOUT_MS })
-          .catch((cause: unknown) =>
-            err(
-              this.#failure("process", "Ghidra shutdown request failed", cause),
-            ),
-          );
-        if (!shutdown.ok || !isGhidraShutdownAcknowledgement(shutdown.value))
-          this.#logger.warn(
-            {
-              status: shutdown.ok ? "invalid-acknowledgement" : "failed",
-              ...(shutdown.ok
-                ? {}
-                : {
-                    kind: shutdown.error.kind,
-                    message: shutdown.error.message,
-                    diagnostics: shutdown.error.diagnostics,
-                  }),
-            },
-            "Ghidra bridge shutdown was not confirmed",
-          );
-      }
+      const shutdownConfirmed = await this.#requestGracefulShutdown(
+        forceStop,
+        socket,
+      );
       this.#failAll(this.#failure("process", "Ghidra session closed"));
       this.#detachSocket?.();
       this.#detachSocket = undefined;
       socket?.destroy();
       this.#socket = undefined;
+      // Only wait for a save when this session can actually publish. Other
+      // closes keep the prompt stop path instead of paying the save grace.
+      const expectPublication =
+        shutdownConfirmed && this.#canPublishManagedProject();
+      let exitedNaturally = false;
       if (this.#process !== undefined) {
-        await this.#process.waitForExit(500);
+        exitedNaturally = await this.#process.waitForExit(
+          forceStop || !expectPublication ? 500 : PROJECT_SAVE_GRACE_MS,
+        );
         this.#processSnapshot = this.#process.snapshot();
         const stopped = await this.#process.stop();
         this.#processSnapshot = this.#process.snapshot();
@@ -1101,6 +1134,11 @@ export class GhidraClient {
           );
         }
       }
+      // Publish only after a confirmed shutdown and a natural process exit. A
+      // stop that had to terminate or kill the JVM may have interrupted the
+      // project save, and a shallow layout check cannot tell a truncated
+      // project from a complete one.
+      await this.#publishManagedProject(!expectPublication || !exitedNaturally);
       this.#lastDiagnostics = this.#diagnostics();
       this.#process = undefined;
       this.#launch = undefined;
@@ -1214,6 +1252,63 @@ export class GhidraClient {
 
   #failAll(error: GhidraSessionError): void {
     this.#pending.failAll(() => err(error));
+  }
+
+  #noteMutation(operation: GhidraOperation): void {
+    if (GHIDRA_MUTATING_OPERATIONS.has(operation)) this.#clientMutated = true;
+  }
+
+  /** Whether this session's state could become a cache entry on a clean close. */
+  #canPublishManagedProject(): boolean {
+    const persistence = this.#options.projectPersistence;
+    const info = this.#sessionInfo;
+    return (
+      persistence !== undefined &&
+      persistence.publishable &&
+      info !== undefined &&
+      this.#launch !== undefined &&
+      info.analysis_complete &&
+      !info.analysis_timed_out &&
+      !this.#clientMutated
+    );
+  }
+
+  /**
+   * Persist a clean, complete fresh import into the managed project cache. Runs
+   * while the private runtime still holds the saved project and before it is
+   * removed. The caller passes `uncleanSession` when shutdown was not confirmed
+   * or the process did not exit on its own, so an interrupted save is never
+   * stored as analysis. A cache failure never fails session cleanup.
+   */
+  async #publishManagedProject(uncleanSession: boolean): Promise<void> {
+    if (uncleanSession || !this.#canPublishManagedProject()) return;
+    const persistence = this.#options.projectPersistence;
+    const info = this.#sessionInfo;
+    const launch = this.#launch;
+    if (persistence === undefined || info === undefined || launch === undefined)
+      return;
+    const published = await persistence.store
+      .publish({
+        reservation: persistence.reservation,
+        identity: persistence.identity,
+        target: persistence.target,
+        sourceProjectDirectory: launch.projectRoot,
+        programName: info.target.name,
+        programSha256: this.#options.targetSha256,
+        producer: persistence.producer,
+      })
+      .catch((cause: unknown) => {
+        this.#logger.warn(
+          { error: cause instanceof Error ? cause.message : String(cause) },
+          "Ghidra project cache publish failed",
+        );
+        return undefined;
+      });
+    if (published !== undefined && !published.ok)
+      this.#logger.warn(
+        { reason: published.error.reason, path: published.error.path },
+        "Ghidra project was not saved to the cache",
+      );
   }
 
   async #startupInterrupted(

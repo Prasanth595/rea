@@ -28,6 +28,7 @@ type FixtureMode =
   | "remote_error"
   | "shutdown_error"
   | "invalid_shutdown_ack"
+  | "ack_without_exit"
   | "hang_after_start"
   | "hang_tools"
   | "exit_tools"

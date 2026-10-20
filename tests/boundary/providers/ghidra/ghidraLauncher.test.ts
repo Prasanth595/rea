@@ -1,4 +1,13 @@
-import { access, chmod, readFile, stat } from "node:fs/promises";
+import {
+  access,
+  chmod,
+  mkdir,
+  readdir,
+  readFile,
+  stat,
+  writeFile,
+} from "node:fs/promises";
+import { EventEmitter } from "node:events";
 import { join, posix, win32 } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -8,6 +17,11 @@ import { z } from "zod";
 import { createTestTempDirectory } from "../../../fixtures/temporaryDirectory.js";
 import { createGhidraTestRuntime } from "../../../fixtures/ghidraRuntime.js";
 import type { PrivateRuntimeRoot } from "../../../../src/process/PrivateRuntimeRoot.js";
+import type {
+  OwnedProviderProcessSpawnOptions,
+  ProviderProcessHandle,
+  SpawnedOwnedProviderProcess,
+} from "../../../../src/process/ProviderProcess.js";
 
 import {
   ghidraHeadlessArguments,
@@ -419,6 +433,339 @@ describe("Ghidra disabled analyzers", () => {
       posix.join("/package/bridge", "ReaGhidraAnalysisOptions.java"),
     );
   });
+});
+
+describe("Ghidra existing project", () => {
+  const base = {
+    platform: "darwin" as const,
+    projectRoot: "/tmp/project",
+    targetPath: "/tmp/target",
+    bridgeScriptPath: "/package/bridge/ReaGhidraBridge.java",
+    descriptorPath: "/tmp/session.json",
+    ghidraLogPath: "/tmp/ghidra.log",
+    scriptLogPath: "/tmp/script.log",
+  };
+
+  it("opens a pre-imported program without importing or deleting the project", () => {
+    const arguments_ = ghidraHeadlessArguments({
+      ...base,
+      existingProject: { programName: "game.exe" },
+    });
+    // The project location and name stay explicit; nothing is imported.
+    expect(arguments_.slice(0, 2)).toEqual(["/tmp/project", "rea-project"]);
+    expect(arguments_).not.toContain("-import");
+    expect(arguments_).not.toContain("-deleteProject");
+    expect(arguments_).toEqual([
+      "/tmp/project",
+      "rea-project",
+      "-process",
+      "game.exe",
+      "-noanalysis",
+      "-readOnly",
+      "-log",
+      "/tmp/ghidra.log",
+      "-scriptlog",
+      "/tmp/script.log",
+      "-scriptPath",
+      "/package/bridge",
+      "-postScript",
+      "/package/bridge/ReaGhidraNoReturnFix.java",
+      "-postScript",
+      "/package/bridge/ReaGhidraBridge.java",
+      "/tmp/session.json",
+    ]);
+  });
+
+  it("prepares soft-float storage before serving a saved program without repeating import or analysis", () => {
+    const args = ghidraHeadlessArguments({
+      ...base,
+      existingProject: { programName: "fixture.elf" },
+      mipsSoftFloat: true,
+    });
+    const soft = "/package/bridge/ReaGhidraMipsSoftFloat.java";
+    expect(args).toContain("-process");
+    expect(args).toContain("-noanalysis");
+    expect(args).toContain("-readOnly");
+    expect(args).not.toContain("-import");
+    expect(args).not.toContain("-deleteProject");
+    expect(args[args.indexOf(soft) - 1]).toBe("-postScript");
+    expect(
+      args.indexOf("/package/bridge/ReaGhidraNoReturnFix.java"),
+    ).toBeLessThan(args.indexOf(soft));
+    expect(args.indexOf(soft)).toBeLessThan(
+      args.indexOf(base.bridgeScriptPath),
+    );
+  });
+
+  it.each([
+    { dosMz: true as const },
+    { dosCom: true as const },
+    {
+      rawBinary: {
+        languageId: "ARM:LE:32:v7",
+        compilerSpecId: "default",
+        baseAddr: "0x8000000",
+      },
+    },
+    { languageOverride: { languageId: "x86:LE:32:default" } },
+    { psp: true as const },
+    { seedPath: "/tmp/runtime/seeds/seeds.tsv" },
+    { disabledAnalyzers: ["Decompiler Parameter ID"] },
+  ])(
+    "rejects the import-only option %o with an existing project",
+    (conflict) => {
+      expect(() =>
+        ghidraHeadlessArguments({
+          ...base,
+          existingProject: { programName: "game.exe" },
+          ...conflict,
+        }),
+      ).toThrow(/existing (Ghidra )?project|fresh import/u);
+    },
+  );
+
+  it("opens a Windows existing project on the P0 launch path", () => {
+    const bridgeDirectory = win32.join("/package", "bridge");
+    const bridgeScriptPath = win32.join(
+      bridgeDirectory,
+      "ReaGhidraBridge.java",
+    );
+    const arguments_ = ghidraHeadlessArguments({
+      ...base,
+      platform: "win32",
+      bridgeScriptPath,
+      existingProject: { programName: "game.exe" },
+    });
+    // The Windows P0 path builds the same `-process -noanalysis -readOnly`
+    // invocation as POSIX. The no-return repair stays POSIX-only, matching a
+    // fresh Windows import's `disabled-windows-p0` profile.
+    expect(arguments_.slice(0, 2)).toEqual(["/tmp/project", "rea-project"]);
+    expect(arguments_).toContain("-process");
+    expect(arguments_).toContain("game.exe");
+    expect(arguments_).toContain("-noanalysis");
+    expect(arguments_).toContain("-readOnly");
+    expect(arguments_).not.toContain("-import");
+    expect(arguments_).not.toContain("-deleteProject");
+    expect(arguments_).not.toContain(
+      win32.join(bridgeDirectory, "ReaGhidraNoReturnFix.java"),
+    );
+    expect(arguments_.at(-1)).toBe("/tmp/session.json");
+  });
+
+  it("requires a program name for -process", () => {
+    expect(() =>
+      ghidraHeadlessArguments({
+        ...base,
+        existingProject: { programName: "   " },
+      }),
+    ).toThrow(/program name/u);
+  });
+});
+
+const fakeSpawnedProcess = (runId: string): SpawnedOwnedProviderProcess => {
+  const handle: ProviderProcessHandle = Object.assign(new EventEmitter(), {
+    pid: 4242,
+    stdout: null,
+    stdin: null,
+    stderr: null,
+    exitCode: null,
+    signalCode: null,
+    kill: () => true,
+  });
+  return {
+    process: handle,
+    ownership: { runId, leaderPid: 4242, processGroupId: 4242 },
+  };
+};
+
+const createFakeJavaHome = async (parent: string): Promise<string> => {
+  const javaHome = join(parent, "jdk");
+  await mkdir(join(javaHome, "bin"), { recursive: true });
+  // LaunchSupport only consults this helper; an empty report is valid.
+  await writeFile(join(javaHome, "bin", "java"), "#!/bin/sh\nexit 0\n", {
+    mode: 0o755,
+  });
+  return javaHome;
+};
+
+const launchExistingProject = async (
+  runtimeRoot: string,
+  parent: string,
+  projectPath: string,
+  spawned: OwnedProviderProcessSpawnOptions[],
+) => {
+  const javaHome = await createFakeJavaHome(parent);
+  const launcher = new GhidraHeadlessLauncher({
+    environment: process.env,
+    analyzeHeadlessPath: fixturePath,
+    platform: "linux",
+    javaHome,
+    configurationDirectoryName: "ghidra_12.1.4_PUBLIC",
+    bridgeScriptPath: "/package/bridge/ReaGhidraBridge.java",
+    existingProject: { projectPath, programName: "game.exe" },
+    spawnProcess: async (options) => {
+      spawned.push(options);
+      return fakeSpawnedProcess(options.runId);
+    },
+  });
+  return launcher.launch({
+    runtimeRoot,
+    transport: "unix-socket",
+    endpointPath: join(runtimeRoot, "bridge.sock"),
+    token: "secret-token-that-must-not-leak",
+    runId: "d6fcbb66-e829-4ff6-a535-0035aec63139",
+    targetPath: "/tmp/target",
+    targetSha256: "b".repeat(64),
+    providerVersion: "12.1.4",
+    profileDigest: "a".repeat(64),
+  });
+};
+
+describe("Ghidra existing project launcher", () => {
+  it.skipIf(process.platform === "win32")(
+    "copies the caller's expanded project into the owned runtime before launching",
+    async () => {
+      const parent = await createTestTempDirectory("rea-launcher-test-");
+      const runtime = await createGhidraTestRuntime(parent);
+      runtimes.push(runtime);
+      const sourceProject = join(parent, "user-project");
+      await mkdir(join(sourceProject, "rea-project.rep"), {
+        recursive: true,
+      });
+      await writeFile(join(sourceProject, "rea-project.gpr"), "project-marker");
+      // A packed archive beside the expanded project is ignored, not copied.
+      await writeFile(join(sourceProject, "rea-project.grez"), "pre-imported");
+      await writeFile(
+        join(sourceProject, "rea-project.rep", "marker"),
+        "recursive",
+      );
+      const spawned: OwnedProviderProcessSpawnOptions[] = [];
+      const launched = await launchExistingProject(
+        runtime.path,
+        parent,
+        sourceProject,
+        spawned,
+      );
+      if (!launched.ok) throw launched.error;
+      try {
+        expect(spawned).toHaveLength(1);
+        expect(spawned[0]?.arguments).not.toContain("-import");
+        expect(spawned[0]?.arguments).not.toContain("-deleteProject");
+        expectOptions(spawned[0]?.arguments ?? [], [["-process", "game.exe"]]);
+        expect(spawned[0]?.arguments).toContain("-noanalysis");
+        expect(spawned[0]?.arguments).toContain("-readOnly");
+        // Copy-first: the owned runtime holds the expanded copy before Ghidra
+        // starts, and never carries the packed archive.
+        expect(
+          await readFile(join(runtime.path, "project", "rea-project.gpr"), {
+            encoding: "utf8",
+          }),
+        ).toBe("project-marker");
+        expect(
+          await readFile(
+            join(runtime.path, "project", "rea-project.rep", "marker"),
+            { encoding: "utf8" },
+          ),
+        ).toBe("recursive");
+        await expect(
+          access(join(runtime.path, "project", "rea-project.grez")),
+        ).rejects.toMatchObject({ code: "ENOENT" });
+        // The caller's original project files stay untouched.
+        expect(
+          await readFile(join(sourceProject, "rea-project.gpr"), {
+            encoding: "utf8",
+          }),
+        ).toBe("project-marker");
+        expect(
+          await readFile(join(sourceProject, "rea-project.grez"), {
+            encoding: "utf8",
+          }),
+        ).toBe("pre-imported");
+      } finally {
+        await launched.value.cleanup?.();
+      }
+    },
+  );
+
+  it.skipIf(process.platform === "win32")(
+    "rejects a packed project that the headless -process launch cannot open",
+    async () => {
+      const parent = await createTestTempDirectory("rea-launcher-test-");
+      const runtime = await createGhidraTestRuntime(parent);
+      runtimes.push(runtime);
+      // A directory holding only a packed rea-project.grez would be copied but
+      // never restored into an expanded project, so the launch must reject it.
+      const sourceProject = join(parent, "user-project");
+      await mkdir(sourceProject, { recursive: true });
+      await writeFile(join(sourceProject, "rea-project.grez"), "packed");
+      const spawned: OwnedProviderProcessSpawnOptions[] = [];
+      const launched = await launchExistingProject(
+        runtime.path,
+        parent,
+        sourceProject,
+        spawned,
+      );
+      expect(launched.ok).toBe(false);
+      if (launched.ok) throw new Error("launch unexpectedly succeeded");
+      expect(String(launched.error.cause)).toMatch(/packed rea-project\.grez/u);
+      expect(spawned).toHaveLength(0);
+      await expect(
+        access(join(runtime.path, "project", "rea-project.grez")),
+      ).rejects.toMatchObject({ code: "ENOENT" });
+    },
+  );
+
+  it.skipIf(process.platform === "win32")(
+    "rejects a missing project directory before starting Ghidra",
+    async () => {
+      const parent = await createTestTempDirectory("rea-launcher-test-");
+      const runtime = await createGhidraTestRuntime(parent);
+      runtimes.push(runtime);
+      const spawned: OwnedProviderProcessSpawnOptions[] = [];
+      const launched = await launchExistingProject(
+        runtime.path,
+        parent,
+        join(parent, "absent-project"),
+        spawned,
+      );
+      expect(launched.ok).toBe(false);
+      if (launched.ok) throw new Error("launch unexpectedly succeeded");
+      // The launcher wraps the copy failure; the reason stays on the cause.
+      expect(String(launched.error.cause)).toMatch(/does not exist/u);
+      expect(spawned).toHaveLength(0);
+    },
+  );
+
+  it.skipIf(process.platform === "win32")(
+    "rejects a project without the fixed rea-project name before copying",
+    async () => {
+      const parent = await createTestTempDirectory("rea-launcher-test-");
+      const runtime = await createGhidraTestRuntime(parent);
+      runtimes.push(runtime);
+      // The headless open selects the expanded project by the fixed name; a
+      // caller directory holding any other project file must fail with its
+      // reason instead of spawning into an opaque Ghidra error.
+      const sourceProject = join(parent, "user-project");
+      await mkdir(sourceProject, { recursive: true });
+      await writeFile(join(sourceProject, "other-project.grez"), "mislabeled");
+      const spawned: OwnedProviderProcessSpawnOptions[] = [];
+      const launched = await launchExistingProject(
+        runtime.path,
+        parent,
+        sourceProject,
+        spawned,
+      );
+      expect(launched.ok).toBe(false);
+      if (launched.ok) throw new Error("launch unexpectedly succeeded");
+      expect(String(launched.error.cause)).toMatch(/expanded project/u);
+      expect(spawned).toHaveLength(0);
+      // Nothing from the rejected project was copied into the owned runtime.
+      await expect(
+        access(join(runtime.path, "project")),
+      ).resolves.toBeUndefined();
+      expect(await readdir(join(runtime.path, "project"))).toEqual([]);
+    },
+  );
 });
 
 describe("Ghidra Windows launcher", () => {

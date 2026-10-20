@@ -100,7 +100,12 @@ export const cliOperationFailureIdentity = (
 ): CliFailureIdentity | undefined =>
   isRecord(value) ? loggedFailures.get(value)?.identity : undefined;
 
-/** Log one CLI command with duration and a stable success or failure status. */
+/**
+ * Log one CLI command with duration and a stable success or failure status.
+ * `isCommandFailure` can override the inferred outcome for command-specific
+ * results; callers that only add failure cases combine it with
+ * `isCliOperationFailure` so a shared error envelope is never hidden.
+ */
 export const logCliCommand = async <Value>(
   logger: Logger,
   command: string,

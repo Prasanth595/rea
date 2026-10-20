@@ -9,6 +9,10 @@ import {
   parseJebMcpTimeoutMs,
 } from "./config/environment.js";
 import { projectAnalysisError } from "./domain/analysisErrorProjection.js";
+import {
+  DEFAULT_GHIDRA_PROJECT_CACHE_MAX_BYTES,
+  defaultGhidraProjectCacheDirectory,
+} from "./config/ghidraProjectCache.js";
 
 it("reports a configuration failure for a NUL in Hopper loader arguments", () => {
   const result = parseConfig({
@@ -47,7 +51,7 @@ it.each([
 it("accepts ordinary custom environment strings and omitted values", () => {
   expect(
     parseEnvironmentValues({
-      CALLER_SETTING: "\nvalue=one;二\t",
+      CALLER_SETTING: "\nvalue=one;õ║î\t",
       EMPTY_SETTING: "",
       OMITTED_SETTING: undefined,
     }).ok,
@@ -398,69 +402,248 @@ describe("JEB MCP timeout configuration", () => {
   );
 });
 
-describe("default Linux Hopper launcher", () => {
-  const home = "/fixture/home";
-  const withExecutables =
-    (paths: readonly string[]) =>
-    (path: string): boolean =>
-      paths.includes(path);
+describe.skipIf(process.platform === "win32")(
+  "default Linux Hopper launcher",
+  () => {
+    const home = "/fixture/home";
+    const withExecutables =
+      (paths: readonly string[]) =>
+      (path: string): boolean =>
+        paths.includes(path);
 
-  it.each([["/opt/hopper-v4/bin/hopper"], ["/usr/bin/hopper"]])(
-    "selects an existing system launcher %s",
-    (path) => {
+    it.each([["/opt/hopper-v4/bin/hopper"], ["/usr/bin/hopper"]])(
+      "selects an existing system launcher %s",
+      (path) => {
+        expect(
+          defaultHopperLauncherPath("linux", home, withExecutables([path])),
+        ).toBe(path);
+      },
+    );
+
+    it("prefers REA-managed and user-local launchers over system paths", () => {
       expect(
-        defaultHopperLauncherPath("linux", home, withExecutables([path])),
-      ).toBe(path);
-    },
-  );
+        defaultHopperLauncherPath(
+          "linux",
+          home,
+          withExecutables([
+            "/opt/hopper/bin/Hopper",
+            "/opt/hopper-v4/bin/hopper",
+            "/usr/bin/hopper",
+          ]),
+        ),
+      ).toBe("/opt/hopper/bin/Hopper");
+      expect(
+        defaultHopperLauncherPath(
+          "linux",
+          home,
+          withExecutables([
+            `${home}/.local/share/rea/hopper/bin/Hopper`,
+            "/usr/bin/hopper",
+          ]),
+        ),
+      ).toBe(`${home}/.local/share/rea/hopper/bin/Hopper`);
+    });
+  },
+);
 
-  it("prefers REA-managed and user-local launchers over system paths", () => {
-    expect(
-      defaultHopperLauncherPath(
-        "linux",
-        home,
-        withExecutables([
-          "/opt/hopper/bin/Hopper",
-          "/opt/hopper-v4/bin/hopper",
-          "/usr/bin/hopper",
-        ]),
-      ),
-    ).toBe("/opt/hopper/bin/Hopper");
-    expect(
-      defaultHopperLauncherPath(
-        "linux",
-        home,
-        withExecutables([
-          `${home}/.local/share/rea/hopper/bin/Hopper`,
-          "/usr/bin/hopper",
-        ]),
-      ),
-    ).toBe(`${home}/.local/share/rea/hopper/bin/Hopper`);
+describe.skipIf(process.platform === "win32")(
+  "default macOS Hopper launcher",
+  () => {
+    it("selects the system path before the installer user path", () => {
+      const home = "/fixture/home";
+      const system =
+        "/Applications/Hopper Disassembler.app/Contents/MacOS/hopper";
+      const user =
+        "/fixture/home/Applications/Hopper Disassembler.app/Contents/MacOS/hopper";
+      const executable = (path: string): boolean =>
+        path === system || path === user;
+
+      expect(defaultHopperLauncherPath("darwin", home, executable)).toBe(
+        system,
+      );
+      expect(
+        defaultHopperLauncherPath("darwin", home, (path) => path === user),
+      ).toBe(user);
+    });
+
+    it("keeps an explicit launcher path unchanged", () => {
+      const configured = "/custom/../Hopper launcher";
+      const parsed = parseConfig({ HOPPER_LAUNCHER_PATH: configured });
+      expect(parsed).toMatchObject({
+        ok: true,
+        value: { hopperLauncherPath: configured },
+      });
+    });
+  },
+);
+
+describe("Ghidra existing project configuration", () => {
+  it("binds a paired existing Ghidra project and program", () => {
+    const result = parseConfig({
+      REA_GHIDRA_EXISTING_PROJECT: "/opt/projects/rea-project",
+      REA_GHIDRA_EXISTING_PROGRAM: "target-abcd.dll",
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok)
+      expect(result.value.ghidraExistingProject).toEqual({
+        projectPath: "/opt/projects/rea-project",
+        programName: "target-abcd.dll",
+      });
+  });
+
+  it.each<[string, Record<string, string>]>([
+    [
+      "REA_GHIDRA_EXISTING_PROGRAM",
+      { REA_GHIDRA_EXISTING_PROJECT: "/opt/projects/rea-project" },
+    ],
+    [
+      "REA_GHIDRA_EXISTING_PROJECT",
+      { REA_GHIDRA_EXISTING_PROGRAM: "target-abcd.dll" },
+    ],
+  ])("requires the paired %s setting", (setting, environment) => {
+    const result = parseConfig(environment);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(projectAnalysisError(result.error)).toMatchObject({
+      code: "configuration_invalid",
+      details: {
+        settings: [
+          {
+            setting,
+            constraint:
+              "REA_GHIDRA_EXISTING_PROJECT and REA_GHIDRA_EXISTING_PROGRAM must be set together",
+          },
+        ],
+      },
+    });
+  });
+
+  it("names the absolute-path constraint of REA_GHIDRA_EXISTING_PROJECT", () => {
+    const result = parseConfig({
+      REA_GHIDRA_EXISTING_PROJECT: "project",
+      REA_GHIDRA_EXISTING_PROGRAM: "target-abcd.dll",
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(projectAnalysisError(result.error)).toMatchObject({
+      details: {
+        settings: [
+          {
+            setting: "REA_GHIDRA_EXISTING_PROJECT",
+            constraint: "REA_GHIDRA_EXISTING_PROJECT must be absolute",
+          },
+        ],
+      },
+    });
+  });
+
+  it("rejects surrounding whitespace in REA_GHIDRA_EXISTING_PROGRAM", () => {
+    const result = parseConfig({
+      REA_GHIDRA_EXISTING_PROJECT: "/opt/projects/rea-project",
+      REA_GHIDRA_EXISTING_PROGRAM: " target-abcd.dll ",
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(projectAnalysisError(result.error)).toMatchObject({
+      details: {
+        settings: [
+          {
+            setting: "REA_GHIDRA_EXISTING_PROGRAM",
+            constraint: expect.any(String),
+          },
+        ],
+      },
+    });
+  });
+
+  it.each<[string, Record<string, string>]>([
+    ["REA_GHIDRA_LANGUAGE_ID", { REA_GHIDRA_LANGUAGE_ID: "x86:LE:64:default" }],
+    ["REA_GHIDRA_SEED_FILE", { REA_GHIDRA_SEED_FILE: "/opt/seeds.json" }],
+    [
+      "REA_GHIDRA_DISABLED_ANALYZERS",
+      { REA_GHIDRA_DISABLED_ANALYZERS: "Stack" },
+    ],
+  ])("rejects %s combined with an existing project", (setting, environment) => {
+    const result = parseConfig({
+      REA_GHIDRA_EXISTING_PROJECT: "/opt/projects/rea-project",
+      REA_GHIDRA_EXISTING_PROGRAM: "target-abcd.dll",
+      ...environment,
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(projectAnalysisError(result.error)).toMatchObject({
+      code: "configuration_invalid",
+      details: { settings: [{ setting, constraint: expect.any(String) }] },
+    });
   });
 });
 
-describe("default macOS Hopper launcher", () => {
-  it("selects the system path before the installer user path", () => {
-    const home = "/fixture/home";
-    const system =
-      "/Applications/Hopper Disassembler.app/Contents/MacOS/hopper";
-    const user =
-      "/fixture/home/Applications/Hopper Disassembler.app/Contents/MacOS/hopper";
-    const executable = (path: string): boolean =>
-      path === system || path === user;
+describe("Ghidra project cache configuration", () => {
+  const home = "/home/tester";
 
-    expect(defaultHopperLauncherPath("darwin", home, executable)).toBe(system);
-    expect(
-      defaultHopperLauncherPath("darwin", home, (path) => path === user),
-    ).toBe(user);
+  it("defaults to off with a manageable cache directory and byte ceiling", () => {
+    const result = parseConfig({ HOME: home });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.ghidraProjectCache).toEqual({
+      mode: "off",
+      directory: defaultGhidraProjectCacheDirectory(home),
+      maxBytes: DEFAULT_GHIDRA_PROJECT_CACHE_MAX_BYTES,
+    });
   });
 
-  it("keeps an explicit launcher path unchanged", () => {
-    const configured = "/custom/../Hopper launcher";
-    const parsed = parseConfig({ HOPPER_LAUNCHER_PATH: configured });
-    expect(parsed).toMatchObject({
-      ok: true,
-      value: { hopperLauncherPath: configured },
+  it("resolves an explicit mode, directory, byte ceiling and max age", () => {
+    const result = parseConfig({
+      HOME: home,
+      REA_GHIDRA_PROJECT_CACHE: "on",
+      REA_GHIDRA_PROJECT_CACHE_DIR: "/var/cache/rea-projects",
+      REA_GHIDRA_PROJECT_CACHE_MAX_BYTES: "2048",
+      REA_GHIDRA_PROJECT_CACHE_MAX_AGE_DAYS: "30",
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.ghidraProjectCache).toEqual({
+      mode: "on",
+      directory: "/var/cache/rea-projects",
+      maxBytes: 2048,
+      maxAgeDays: 30,
+    });
+  });
+
+  it.each<[string, string]>([
+    ["REA_GHIDRA_PROJECT_CACHE", "sometimes"],
+    ["REA_GHIDRA_PROJECT_CACHE_DIR", "relative/cache"],
+    ["REA_GHIDRA_PROJECT_CACHE_MAX_BYTES", "0"],
+    ["REA_GHIDRA_PROJECT_CACHE_MAX_AGE_DAYS", "0"],
+  ])("rejects an invalid %s value", (setting, value) => {
+    const result = parseConfig({ HOME: home, [setting]: value });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(projectAnalysisError(result.error)).toMatchObject({
+      code: "configuration_invalid",
+      details: { settings: [{ setting, constraint: expect.any(String) }] },
+    });
+  });
+
+  it("rejects the managed cache combined with a caller-selected project", () => {
+    const result = parseConfig({
+      HOME: home,
+      REA_GHIDRA_PROJECT_CACHE: "read",
+      REA_GHIDRA_EXISTING_PROJECT: "/opt/projects/rea-project",
+      REA_GHIDRA_EXISTING_PROGRAM: "target-abcd.dll",
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(projectAnalysisError(result.error)).toMatchObject({
+      code: "configuration_invalid",
+      details: {
+        settings: [
+          {
+            setting: "REA_GHIDRA_PROJECT_CACHE",
+            constraint: expect.stringContaining("REA_GHIDRA_EXISTING_PROJECT"),
+          },
+        ],
+      },
     });
   });
 });

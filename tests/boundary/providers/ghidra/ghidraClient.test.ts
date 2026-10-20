@@ -1,7 +1,10 @@
 import { parseConfig } from "../../../../src/config/parseConfig.js";
 import { GhidraProvider } from "../../../../src/ghidra/GhidraProvider.js";
 import { fixtureDosLoadImage } from "../../../../src/ghidra/GhidraLoadImage.fixture.js";
-import { jsonValueSchema } from "../../../../src/domain/jsonValue.js";
+import {
+  jsonValueSchema,
+  type JsonValue,
+} from "../../../../src/domain/jsonValue.js";
 import { artifactFilePrimaryFailure } from "../../../../src/artifacts/ArtifactFileOperation.js";
 import { AnalysisCancelledError } from "../../../../src/domain/analysisErrorCore.js";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -35,7 +38,14 @@ import {
   GhidraHeadlessLauncher,
   GhidraLaunchError,
 } from "../../../../src/ghidra/GhidraLauncher.js";
-import type { GhidraDiagnostic } from "../../../../src/ghidra/GhidraClientTypes.js";
+import type {
+  GhidraDiagnostic,
+  GhidraProjectPersistence,
+} from "../../../../src/ghidra/GhidraClientTypes.js";
+import type { GhidraProjectCacheIdentity } from "../../../../src/ghidra/projectCache/GhidraProjectCacheTypes.js";
+import type { GhidraProjectManifestTarget } from "../../../../src/ghidra/projectCache/GhidraProjectManifest.js";
+import type { GhidraProjectReservation } from "../../../../src/ghidra/projectCache/GhidraProjectStore.js";
+import { GhidraProjectStore } from "../../../../src/ghidra/projectCache/GhidraProjectStore.js";
 import type {
   GhidraLaunchSession,
   GhidraLauncher,
@@ -124,6 +134,7 @@ const clientFor = (
     readonly logger?: Logger;
     readonly targetPath?: string;
     readonly targetSha256?: string;
+    readonly projectPersistence?: GhidraProjectPersistence;
   } = {},
 ): GhidraClient => {
   const client = new GhidraClient({
@@ -139,6 +150,9 @@ const clientFor = (
     ...(options.onDiagnostic === undefined
       ? {}
       : { onDiagnostic: options.onDiagnostic }),
+    ...(options.projectPersistence === undefined
+      ? {}
+      : { projectPersistence: options.projectPersistence }),
   });
   clients.push(client);
   return client;
@@ -1982,6 +1996,119 @@ describe("GhidraClient shutdown diagnostics", () => {
         access(launcher.runtimeRoots[0] ?? ""),
       ).rejects.toMatchObject({ code: "ENOENT" });
       await expect(waitForExit(launcher.processes[0])).resolves.toBe(true);
+    },
+  );
+});
+
+const managedStore = (calls: unknown[]): GhidraProjectStore =>
+  ({
+    publish: async (input: unknown) => {
+      calls.push(input);
+      return ok({ published: true });
+    },
+  }) as unknown as GhidraProjectStore;
+
+/** One request per mutating operation the bridge admits. */
+const MUTATION_REQUESTS: Readonly<Record<string, Record<string, JsonValue>>> = {
+  annotate_native_function: {
+    procedure: "0x1000",
+    name: "fixture_renamed",
+  },
+  set_address_name: {
+    document: null,
+    address: "0x1000",
+    name: "fixture_renamed",
+  },
+  set_addresses_names: {
+    document: null,
+    names: { "0x1000": "fixture_renamed" },
+  },
+};
+
+const managedPersistence = (
+  calls: unknown[],
+  overrides: Partial<GhidraProjectPersistence> = {},
+): GhidraProjectPersistence => ({
+  store: managedStore(calls),
+  reservation: {
+    key: "a".repeat(64),
+    hit: false,
+    entryPath: "/tmp/rea-cache-entry",
+    stagingPath: "/tmp/rea-cache-staging",
+    rootPreparation: { status: "ready" },
+  } satisfies GhidraProjectReservation,
+  identity: {
+    providerId: "ghidra",
+    providerVersion: PROVIDER_VERSION,
+    jvmVmName: "OpenJDK 64-Bit Server VM",
+    platform: "linux",
+    targetSha256: TARGET_SHA256,
+    importProfileDigest: PROFILE_DIGEST,
+  } satisfies GhidraProjectCacheIdentity,
+  target: {
+    sha256: TARGET_SHA256,
+    kind: "executable",
+    format: "elf",
+    architecture: "x86_64",
+    executable_role: null,
+  } satisfies GhidraProjectManifestTarget,
+  producer: { reaVersion: "test", runId: "run-1" },
+  publishable: true,
+  reuse: false,
+  ...overrides,
+});
+
+describe("GhidraClient managed project publication", () => {
+  it("publishes a clean session only after a confirmed shutdown", async () => {
+    const calls: unknown[] = [];
+    const client = clientFor(new FixtureLauncher("success"), {
+      projectPersistence: managedPersistence(calls),
+    });
+    await expect(client.start()).resolves.toMatchObject({ ok: true });
+    await expect(client.close()).resolves.toMatchObject({ ok: true });
+    expect(calls).toHaveLength(1);
+  });
+
+  it("does not publish when the bridge shutdown was not confirmed", async () => {
+    const calls: unknown[] = [];
+    const client = clientFor(new FixtureLauncher("invalid_shutdown_ack"), {
+      projectPersistence: managedPersistence(calls),
+    });
+    await expect(client.start()).resolves.toMatchObject({ ok: true });
+    await expect(client.close()).resolves.toMatchObject({ ok: true });
+    expect(calls).toHaveLength(0);
+  });
+
+  it("does not publish when an acknowledged shutdown did not exit naturally", async () => {
+    const calls: unknown[] = [];
+    const client = clientFor(new FixtureLauncher("ack_without_exit"), {
+      projectPersistence: managedPersistence(calls),
+    });
+    await expect(client.start()).resolves.toMatchObject({ ok: true });
+    await expect(client.close()).resolves.toMatchObject({ ok: true });
+    expect(calls).toHaveLength(0);
+  });
+
+  it.each([...GHIDRA_MUTATING_OPERATIONS])(
+    "does not publish after the mutating operation %s",
+    async (mutating) => {
+      const calls: unknown[] = [];
+      const launcher = new FixtureLauncher("success");
+      const client = clientFor(launcher, {
+        projectPersistence: managedPersistence(calls),
+      });
+      await expect(client.start()).resolves.toMatchObject({ ok: true });
+      const result = await client.callTool(
+        mutating as Parameters<GhidraClient["callTool"]>[0],
+        MUTATION_REQUESTS[mutating] ?? {},
+      );
+      // The bridge answers the mutation, so the request settles instead of
+      // waiting for a reply that never arrives. A read-only transport refuses
+      // the mutation, exactly like the real bridge.
+      expect(result.ok).toBe(HOST_TRANSPORT === "unix-socket");
+      expect(launcher.requests).toContain(mutating);
+      await expect(client.close()).resolves.toMatchObject({ ok: true });
+      expect(calls).toHaveLength(0);
     },
   );
 });

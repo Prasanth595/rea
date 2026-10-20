@@ -1,6 +1,8 @@
 import { rename, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 
+import { handleMutation, MUTATING_METHODS } from "./fakeGhidraMutations.mjs";
+
 const configuration = JSON.parse(
   process.env.REA_GHIDRA_FIXTURE_CONFIG ?? "null",
 );
@@ -204,6 +206,10 @@ const handleRequest = (socket, server, request, state) => {
   if (request.method !== "shutdown" && handleOutputFailure(socket, state))
     return;
   if (state.mode === "hang_tools" && request.method !== "shutdown") return;
+  if (MUTATING_METHODS.has(request.method)) {
+    handleMutation(socket, request, transport);
+    return;
+  }
   const inventory =
     request.method === "list_strings" && state.mode === "fragmented"
       ? [stringItem("0x2000", "fixture 雪🦊")]
@@ -243,7 +249,11 @@ const handleRequest = (socket, server, request, state) => {
             }),
       })}\n`,
     );
+    // Acknowledging shutdown is not proof the JVM finished saving. This mode
+    // keeps running until the client stops it so publication must be skipped.
+    if (state.mode === "ack_without_exit") return;
     server.close(() => process.exit(0));
+    return;
   }
 };
 

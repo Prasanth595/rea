@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { DeferredAnalysisClient } from "../providers/DeferredAnalysisClient.js";
 import type { ProviderInspectionScope } from "../providers/ProviderInspectionScope.js";
 import { analysisClientFailureForOperation } from "../providers/AnalysisClientFailure.js";
@@ -44,13 +45,22 @@ import { ProviderAdapterError } from "../domain/providerAdapterError.js";
 import { ProviderCleanupError } from "../domain/providerCleanupError.js";
 import type { Logger } from "pino";
 import { GhidraClient } from "./GhidraClient.js";
+import type { GhidraProjectPersistence } from "./GhidraClientTypes.js";
+import { GhidraProjectStore } from "./projectCache/GhidraProjectStore.js";
+import type { GhidraProjectCacheIdentity } from "./projectCache/GhidraProjectCacheTypes.js";
+import { ghidraProjectCacheCommitmentSchema } from "./projectCache/GhidraProjectCacheCommitment.js";
+import type { GhidraProjectReservation } from "./projectCache/GhidraProjectStore.js";
+import { PRODUCT_IDENTITY } from "../identity.js";
 import {
   ghidraInstallationDiagnostics,
   inspectGhidraInstallation,
   type GhidraInstallationHost,
   type GhidraInstallationInspection,
 } from "./GhidraInstallation.js";
-import { resolveGhidraAnalysisProfile } from "./GhidraAnalysisProfile.js";
+import {
+  ghidraExistingProjectUnsupportedReason,
+  resolveGhidraAnalysisProfile,
+} from "./GhidraAnalysisProfile.js";
 import { AnalysisCancelledError } from "../domain/analysisErrorCore.js";
 import { resolveGhidraAnalysisSeeds } from "./GhidraAnalysisSeeds.js";
 import {
@@ -93,8 +103,26 @@ const SUPPORTED_ARCHITECTURES = new Set([
   "hexagon",
 ]);
 
+/** Managed project-cache coordinates retained between profile and client creation. */
+interface ManagedGhidraProject {
+  readonly store: GhidraProjectStore;
+  readonly identity: GhidraProjectCacheIdentity;
+  readonly reservation: GhidraProjectReservation;
+  /** A stored entry this session did not reuse and rebuilt with a fresh import. */
+  readonly rejectedEntry?: {
+    readonly reason: string;
+    readonly path?: string;
+    /** The entry was removed; false while another session still holds it. */
+    readonly discarded: boolean;
+  };
+}
+
 /** Ghidra candidate backed by an isolated ephemeral headless import. */
 export class GhidraProvider implements AnalysisProviderCandidate {
+  #installation: GhidraInstallationInspection | undefined;
+  #store: GhidraProjectStore | undefined;
+  /** Cache wiring keyed by the committed profile digest a client will receive. */
+  readonly #managedProjects = new Map<string, ManagedGhidraProject>();
   readonly #inspectionResources = new ArtifactResourceScope();
   readonly #inspectionWork = new Set<Promise<unknown>>();
   #lifetime = new AbortController();
@@ -391,6 +419,7 @@ export class GhidraProvider implements AnalysisProviderCandidate {
       options?.signal,
       this.config.ghidraLanguageOverride,
       this.config.ghidraDisabledAnalyzers,
+      this.config.ghidraExistingProject !== undefined,
     );
     if (!resolved.ok || resolved.value.profile === null) return resolved;
     const override = this.config.ghidraLanguageOverride;
@@ -452,11 +481,10 @@ export class GhidraProvider implements AnalysisProviderCandidate {
       options?.signal,
     );
     if (!seeds.ok) return seeds;
-    if (extensions.value.length === 0 && seeds.value === undefined)
-      return resolved;
-    return ok({
-      ...resolved.value,
-      profile: createAnalysisProfile(resolved.value.profile.provider, {
+    const existingProject = this.config.ghidraExistingProject;
+    const intentProfile = createAnalysisProfile(
+      resolved.value.profile.provider,
+      {
         ...resolved.value.profile.parameters,
         ...(extensions.value.length === 0
           ? {}
@@ -464,8 +492,33 @@ export class GhidraProvider implements AnalysisProviderCandidate {
         ...(seeds.value === undefined
           ? {}
           : { analysis_seeds: jsonValueSchema.parse(seeds.value) }),
-      }),
-    });
+      },
+    );
+    if (existingProject !== undefined)
+      return ok({
+        ...resolved.value,
+        profile: createAnalysisProfile(resolved.value.profile.provider, {
+          ...intentProfile.parameters,
+          // A caller-selected project is not manifest-verified, so its state is
+          // never treated as a reusable identity: each resolution gets its own
+          // session id and snapshots stay session-local.
+          existing_project: {
+            program_name: existingProject.programName,
+            session_id: randomUUID(),
+          },
+        }),
+      });
+    const managed = await this.#prepareManagedProject(
+      target,
+      installation,
+      intentProfile,
+      options?.signal,
+    );
+    if (managed !== undefined) {
+      this.#managedProjects.set(managed.profile.digest, managed.persistence);
+      return ok({ ...resolved.value, profile: managed.profile });
+    }
+    return ok({ ...resolved.value, profile: intentProfile });
   }
 
   createClient(
@@ -473,6 +526,10 @@ export class GhidraProvider implements AnalysisProviderCandidate {
     profile?: AnalysisProfileCommitment,
     context?: AnalysisClientContext,
   ): AnalysisClient {
+    const managed =
+      profile === undefined
+        ? undefined
+        : this.#managedProjects.get(profile.digest);
     return new DeferredAnalysisClient(async (signal, resourceOwner) => {
       const admitted = admitGhidraClient(
         target,
@@ -493,6 +550,15 @@ export class GhidraProvider implements AnalysisProviderCandidate {
         ...(context === undefined ? {} : { context }),
         installation,
         signal,
+        ...(managed === undefined
+          ? {}
+          : {
+              projectPersistence: this.#persistenceFor(
+                target,
+                managed,
+                context,
+              ),
+            }),
       });
       if (!created.ok) throw created.error;
       return created.value;
@@ -623,6 +689,159 @@ export class GhidraProvider implements AnalysisProviderCandidate {
     return this.installationHost === undefined
       ? inspectGhidraInstallation(options)
       : inspectGhidraInstallation(options, this.installationHost);
+  }
+
+  #projectStore(): GhidraProjectStore | undefined {
+    if (this.config.ghidraProjectCache.mode === "off") return undefined;
+    this.#store ??= new GhidraProjectStore({
+      root: this.config.ghidraProjectCache.directory,
+      maxBytes: this.config.ghidraProjectCache.maxBytes,
+      platform: this.installationHost?.platform ?? process.platform,
+      ...(this.config.ghidraProjectCache.maxAgeDays === undefined
+        ? {}
+        : { maxAgeDays: this.config.ghidraProjectCache.maxAgeDays }),
+    });
+    return this.#store;
+  }
+
+  /**
+   * Resolve a managed stored project for this target, or reserve a staging slot
+   * on a miss. Returns undefined (keeping the ephemeral profile) when the cache
+   * is disabled, unsupported for the target, or unreadable.
+   */
+  async #prepareManagedProject(
+    target: BinaryTarget,
+    installation: GhidraInstallationInspection,
+    intentProfile: AnalysisProfileCommitment,
+    signal?: AbortSignal,
+  ): Promise<
+    | {
+        readonly profile: AnalysisProfileCommitment;
+        readonly persistence: ManagedGhidraProject;
+      }
+    | undefined
+  > {
+    const store = this.#projectStore();
+    if (store === undefined || installation.status !== "available")
+      return undefined;
+    // A stored project opens with -process, which DOS, raw-binary and PSP
+    // targets cannot select, so those lanes are never cached.
+    if (ghidraExistingProjectUnsupportedReason(target) !== null)
+      return undefined;
+    const identity: GhidraProjectCacheIdentity = {
+      providerId: GHIDRA_PROVIDER_IDENTITY.id,
+      providerVersion: installation.providerVersion,
+      jvmVmName: installation.javaVmName ?? "unknown",
+      platform: installation.platform,
+      targetSha256: target.sha256,
+      importProfileDigest: intentProfile.digest,
+    };
+    let prepared;
+    try {
+      prepared = await store.prepare({
+        identity,
+        mode: this.config.ghidraProjectCache.mode,
+        ...(signal === undefined ? {} : { signal }),
+      });
+    } catch (cause: unknown) {
+      this.logger.warn(
+        { error: providerFailureText(cause) },
+        "Ghidra project cache lookup failed; importing fresh",
+      );
+      return undefined;
+    }
+    if (!prepared.ok) {
+      this.logger.warn(
+        { reason: prepared.error.reason, path: prepared.error.path },
+        "Ghidra project cache lookup failed; importing fresh",
+      );
+      return undefined;
+    }
+    if (prepared.value === null) return undefined;
+    const preparation = prepared.value.rootPreparation;
+    if (preparation.status === "repaired")
+      this.logger.warn(
+        {
+          preserved_entries: preparation.preservedEntries,
+          ...(preparation.leftoverRoot === undefined
+            ? {}
+            : { leftover_root: preparation.leftoverRoot }),
+        },
+        "Rebuilt the Ghidra project cache root as an owner-only directory",
+      );
+    const rejected = prepared.value.rejectedEntry;
+    if (rejected !== undefined)
+      this.logger.warn(
+        {
+          reason: rejected.error.reason,
+          path: rejected.error.path,
+        },
+        rejected.discarded
+          ? "Discarded a stored Ghidra project that could not be reused; a fresh import will rebuild it"
+          : "A stored Ghidra project was not reused; a fresh import will rebuild it",
+      );
+    const parameters: Record<string, JsonValue> = {
+      ...intentProfile.parameters,
+    };
+    // Identity is open-mode independent: import-mode provenance is dropped so a
+    // miss and a hit commit the same profile for one target, which lets a
+    // stored analysis snapshot replay in a later session.
+    delete parameters.import_mode;
+    const profile = createAnalysisProfile(intentProfile.provider, {
+      ...parameters,
+      project_cache: ghidraProjectCacheCommitmentSchema.parse({
+        key: prepared.value.key,
+        import_profile_digest: identity.importProfileDigest,
+      }),
+    });
+    return {
+      profile,
+      persistence: {
+        store,
+        identity,
+        reservation: prepared.value,
+        ...(rejected === undefined
+          ? {}
+          : {
+              rejectedEntry: {
+                reason: rejected.error.reason,
+                ...(rejected.error.path === undefined
+                  ? {}
+                  : { path: rejected.error.path }),
+                discarded: rejected.discarded,
+              },
+            }),
+      },
+    };
+  }
+
+  #persistenceFor(
+    target: BinaryTarget,
+    managed: ManagedGhidraProject,
+    context: AnalysisClientContext | undefined,
+  ): GhidraProjectPersistence {
+    const reuse = managed.reservation.hit;
+    return {
+      store: managed.store,
+      reservation: managed.reservation,
+      identity: managed.identity,
+      target: {
+        sha256: target.sha256,
+        kind: target.kind,
+        format: target.format,
+        architecture: target.architecture ?? null,
+        executable_role: target.executableRole ?? null,
+      },
+      producer: {
+        reaVersion: PRODUCT_IDENTITY.packageVersion,
+        runId: context?.runId ?? randomUUID(),
+      },
+      publishable: !reuse && managed.reservation.stagingPath !== undefined,
+      reuse,
+      ...(managed.rejectedEntry === undefined
+        ? {}
+        : { rejectedEntry: managed.rejectedEntry }),
+    };
   }
 }
 

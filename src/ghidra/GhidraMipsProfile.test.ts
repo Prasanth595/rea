@@ -16,6 +16,11 @@ import {
 } from "./GhidraMipsProfile.js";
 import { ghidraProfileInstallationHost as host } from "./GhidraInstallation.fixture.js";
 import { GHIDRA_SESSION_CAPABILITIES } from "./GhidraSessionValues.js";
+import {
+  GhidraHeadlessLauncher,
+  ghidraHeadlessArguments,
+  type GhidraLauncher,
+} from "./GhidraLauncher.js";
 import type { GhidraMipsSoftFloatReport } from "./GhidraMipsProfile.js";
 import {
   ghidraPinnedLanguage,
@@ -297,53 +302,126 @@ const session = async (
   value: BinaryTarget,
   reported: GhidraMipsSoftFloatReport | undefined,
   profileFor: BinaryTarget = value,
+  configuration = config,
 ) => {
+  const launchers: GhidraLauncher[] = [];
   const counts = { starts: 0, calls: 0, closes: 0 };
-  const ghidra = new GhidraProvider(config, silentLogger, {}, host, () => ({
-    start: () => {
-      counts.starts++;
-      return Promise.resolve(
-        ok({
-          name: "REA Ghidra bridge" as const,
-          run_id: "11111111-1111-4111-8111-111111111111",
-          profile_digest: "a".repeat(64),
-          provider: { id: "ghidra" as const, version: "12.1.4" },
-          read_only: false,
-          analysis_complete: true,
-          analysis_timed_out: false,
-          capabilities: [...GHIDRA_SESSION_CAPABILITIES],
-          target: {
-            name: "fixture.elf",
-            language_id: "MIPS:LE:32:default",
-            compiler_spec_id: "default",
-            image_base: "0x0",
-            default_address_space: "ram",
-            sha256: "a".repeat(64),
-          },
-          ...(reported === undefined
-            ? {}
-            : { mips_soft_float_storage: reported }),
-        }),
-      );
+  const ghidra = new GhidraProvider(
+    configuration,
+    silentLogger,
+    {},
+    host,
+    (options) => {
+      launchers.push(options.launcher);
+      return {
+        start: () => {
+          counts.starts++;
+          return Promise.resolve(
+            ok({
+              name: "REA Ghidra bridge" as const,
+              run_id: "11111111-1111-4111-8111-111111111111",
+              profile_digest: "a".repeat(64),
+              provider: { id: "ghidra" as const, version: "12.1.4" },
+              read_only: false,
+              analysis_complete: true,
+              analysis_timed_out: false,
+              capabilities: [...GHIDRA_SESSION_CAPABILITIES],
+              target: {
+                name: "fixture.elf",
+                language_id: "MIPS:LE:32:default",
+                compiler_spec_id: "default",
+                image_base: "0x0",
+                default_address_space: "ram",
+                sha256: "a".repeat(64),
+              },
+              ...(reported === undefined
+                ? {}
+                : { mips_soft_float_storage: reported }),
+            }),
+          );
+        },
+        callTool: () => {
+          counts.calls++;
+          return Promise.resolve(ok(null));
+        },
+        close: () => {
+          counts.closes++;
+          return Promise.resolve(ok(null));
+        },
+      };
     },
-    callTool: () => {
-      counts.calls++;
-      return Promise.resolve(ok(null));
-    },
-    close: () => {
-      counts.closes++;
-      return Promise.resolve(ok(null));
-    },
-  }));
+  );
   const resolved = await ghidra.resolveAnalysisProfile(profileFor);
   if (!resolved.ok || resolved.value.profile === null)
     throw new Error("expected a MIPS profile");
   return {
     counts,
+    launchers,
     profile: resolved.value.profile,
     client: ghidra.createClient(value, resolved.value.profile),
   };
 };
+
+// The MIPS soft-float saved-project lane pins the POSIX bridge path flavor
+// ("/ReaGhidraMipsSoftFloat.java"), so it is verified on Linux/macOS only.
+describe.skipIf(process.platform === "win32")(
+  "soft-float saved-project preparation",
+  () => {
+    it.each([report, undefined])(
+      "requires the storage report after preparing an existing project (%j)",
+      async (reported) => {
+        const selected = parseConfig({
+          GHIDRA_INSTALL_DIR: "/ghidra",
+          REA_GHIDRA_EXISTING_PROJECT: "/projects/soft-float",
+          REA_GHIDRA_EXISTING_PROGRAM: "fixture.elf",
+        });
+        if (!selected.ok) throw selected.error;
+        const value = target(softFloat);
+        const { counts, launchers, profile, client } = await session(
+          value,
+          reported,
+          value,
+          selected.value,
+        );
+        const health = await client.execute("health", {});
+        expect(profile.parameters.import_mode).toBe("existing-project-copy");
+        const [launcher] = launchers;
+        if (!(launcher instanceof GhidraHeadlessLauncher))
+          throw new Error("Expected the production headless launcher");
+        expect(launcher.options.mipsSoftFloat).toBe(true);
+        expect(launcher.options.languageOverride).toBeUndefined();
+        expect(launcher.options.existingProject).toEqual({
+          projectPath: "/projects/soft-float",
+          programName: "fixture.elf",
+        });
+        const args = ghidraHeadlessArguments({
+          platform: "linux",
+          projectRoot: "/runtime/copied-project",
+          targetPath: value.path,
+          existingProject: launcher.options.existingProject!,
+          mipsSoftFloat: launcher.options.mipsSoftFloat!,
+          bridgeScriptPath: launcher.options.bridgeScriptPath,
+          descriptorPath: "/runtime/session.json",
+          ghidraLogPath: "/runtime/ghidra.log",
+          scriptLogPath: "/runtime/script.log",
+        });
+        expect(args).toContain("-noanalysis");
+        expect(args).toContain("-readOnly");
+        expect(
+          args.some((arg) => arg.endsWith("/ReaGhidraMipsSoftFloat.java")),
+        ).toBe(true);
+        expect(health.ok).toBe(reported !== undefined);
+        if (!health.ok) expect(health.error._tag).toBe("ProviderAdapterError");
+        expect(counts).toEqual({
+          starts: 1,
+          calls: 0,
+          closes: reported === undefined ? 1 : 0,
+        });
+        await client.close();
+      },
+    );
+  },
+);
 
 describe("legacy profile bindings", () => {
   it("refuses a legacy endian pin committed for a different target", async () => {
