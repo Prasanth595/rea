@@ -58,8 +58,9 @@ const utilityProcess = {
 };
 globalThis.__nativeShellCalls = [];
 const shell = {
-  openExternal: () => Promise.resolve(),
-  openPath: () => Promise.resolve(),
+  openExternal: (path) => { globalThis.__nativeShellCalls.push(["openExternal", path]); return Promise.resolve(); },
+  openPath: (path) => { globalThis.__nativeShellCalls.push(["openPath", path]); return Promise.resolve(""); },
+  trashItem: (path) => { globalThis.__nativeShellCalls.push(["trashItem", path]); return Promise.resolve(); },
   showItemInFolder: (path) => { globalThis.__nativeShellCalls.push(["showItemInFolder", path]); },
   writeShortcutLink: (path) => { globalThis.__nativeShellCalls.push(["writeShortcutLink", path]); return true; },
 };
@@ -110,6 +111,7 @@ const defaultPopupDecision = window.webContents.windowOpenHandler({ url: "https:
 window.webContents.setWindowOpenHandler(() => ({ action: "allow" }));
 const popupDecision = window.webContents.windowOpenHandler({ url: "https://popup.invalid" });
 electron.shell.openExternal("https://example.invalid").catch(() => undefined);
+electron.shell.trashItem("/path/to/host/file").catch(() => undefined);
 electron.app.relaunch();
 electron.contextBridge.exposeInMainWorld("api", { value: true });
 window.webContents.loadURL("https://example.invalid").catch(() => undefined);
@@ -191,7 +193,16 @@ it("retains active hook evidence within its event-retention budget", async () =>
     expect.arrayContaining([
       expect.objectContaining({ kind: "window-lifecycle", event: "created" }),
       expect.objectContaining({ kind: "preload", event: "configured" }),
-      expect.objectContaining({ kind: "shell-attempt", phase: "blocked" }),
+      expect.objectContaining({
+        kind: "shell-attempt",
+        event: "openExternal",
+        phase: "blocked",
+      }),
+      expect.objectContaining({
+        kind: "shell-attempt",
+        event: "trashItem",
+        phase: "blocked",
+      }),
       expect.objectContaining({ kind: "updater", phase: "blocked" }),
       expect.objectContaining({ kind: "native-addon" }),
       expect.objectContaining({ kind: "popup-attempt", phase: "blocked" }),
@@ -225,28 +236,43 @@ it("retains active hook evidence within its event-retention budget", async () =>
   );
 });
 
-it("blocks synchronous shell effects with their native return contracts and retains argument shapes only", async () => {
+it("blocks shell effects with their native return contracts and retains argument shapes only", async () => {
   const root = await createTestTempDirectory("rea-electron-hook-shell-");
   temporary.push(root);
   await writeElectronFixture(root);
   const script = join(root, "shell.cjs");
   await writeFile(
     script,
-    `const { shell } = require("electron");
+    `(async () => {
+const { shell } = require("electron");
+const asyncResults = [];
+for (const method of ["openExternal", "openPath", "trashItem"]) {
+  const result = shell[method]("/host/secret-folder/file.txt");
+  let error = null;
+  try { await result; } catch (cause) { error = cause.message; }
+  asyncResults.push({ method, promise: result instanceof Promise, error });
+}
 const revealed = shell.showItemInFolder("/host/secret-folder/file.txt");
 const written = shell.writeShortcutLink("C:\\\\Users\\\\host\\\\app.lnk", "create", { target: "C:\\\\payload.exe" });
 const snapshot = globalThis.__reaElectronActiveSnapshot();
 process.stdout.write(JSON.stringify({
+  async_results: asyncResults,
   revealed: revealed === undefined ? "undefined" : revealed,
   written,
   native_calls: globalThis.__nativeShellCalls,
   snapshot,
 }) + "\\n");
+})().catch((cause) => { console.error(cause); process.exitCode = 1; });
 `,
   );
   const execution = await runNode(script, root);
   expect(execution.code, execution.stderr).toBe(0);
   const result = JSON.parse(execution.stdout.trim()) as {
+    readonly async_results: readonly {
+      readonly method: string;
+      readonly promise: boolean;
+      readonly error: string | null;
+    }[];
     readonly revealed: string;
     readonly written: boolean;
     readonly native_calls: readonly unknown[];
@@ -255,14 +281,29 @@ process.stdout.write(JSON.stringify({
       readonly events: readonly Record<string, unknown>[];
     };
   };
+  expect(result.native_calls).toEqual([]);
+  expect(result.async_results).toEqual(
+    ["openExternal", "openPath", "trashItem"].map((method) => ({
+      method,
+      promise: true,
+      error: "External shell effects are blocked",
+    })),
+  );
   expect(result.revealed).toBe("undefined");
   expect(result.written).toBe(false);
-  expect(result.native_calls).toEqual([]);
   expect(result.snapshot.hook_error).toBe(false);
   const attempts = result.snapshot.events.filter(
     (event) => event.kind === "shell-attempt",
   );
   expect(attempts).toEqual([
+    ...["openExternal", "openPath", "trashItem"].map((event) =>
+      expect.objectContaining({
+        event,
+        phase: "blocked",
+        argument_shapes: ["string"],
+        error: true,
+      }),
+    ),
     expect.objectContaining({
       event: "showItemInFolder",
       phase: "blocked",

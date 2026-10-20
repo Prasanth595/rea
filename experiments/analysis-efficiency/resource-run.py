@@ -68,6 +68,8 @@ def stop_owned_scope(unit, process, group):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--task-ceiling', type=int, default=192)
+    parser.add_argument('--memory-gib', type=int, choices=[4, 8], default=4,
+                        help='Whole owned-scope memory cap; default preserves earlier experiments')
     parser.add_argument('--observe-payload-exit', action='store_true',
                         help='Observe payload-exit counters before the cgroup observer exits')
     parser.add_argument('command', nargs=argparse.REMAINDER)
@@ -82,8 +84,10 @@ def main():
     if not args:
         raise SystemExit('Usage: resource-run.py -- COMMAND ARGS...')
     gib = 1024 ** 3
-    if available_bytes() < 8 * gib:
-        raise SystemExit('Refusing experiment: less than 8 GiB available')
+    memory_budget = options.memory_gib * gib
+    early_stop = memory_budget * 3 // 4
+    if available_bytes() < memory_budget + 4 * gib:
+        raise SystemExit('Refusing experiment: memory budget plus 4 GiB host reserve unavailable')
     unit = 'rea-efficiency-' + uuid.uuid4().hex + '.scope'
     cpu = max(os.sched_getaffinity(0))
     receipt_root = tempfile.TemporaryDirectory(prefix='rea-payload-counters-') if options.observe_payload_exit else None
@@ -95,7 +99,8 @@ def main():
     ]
     command = [
         'systemd-run', '--user', '--scope', '--unit=' + unit,
-        '-p', 'MemoryMax=4G', '-p', 'MemoryHigh=3G', '-p', 'MemorySwapMax=0',
+        '-p', 'MemoryMax=' + str(options.memory_gib) + 'G',
+        '-p', 'MemoryHigh=' + str(early_stop), '-p', 'MemorySwapMax=0',
         '-p', 'CPUQuota=100%', '-p', 'TasksMax=' + str(options.task_ceiling),
         'taskset', '-c', str(cpu), *payload,
     ]
@@ -158,7 +163,7 @@ def main():
                 except FileNotFoundError:
                     # A completed transient scope can disappear between reads.
                     pass
-            if peak > 3 * gib:
+            if peak > early_stop:
                 abort = 'scope_memory_early_stop'
             elif available_bytes() < 4 * gib:
                 abort = 'host_available_memory_early_stop'
@@ -183,8 +188,8 @@ def main():
         print(json.dumps({
             'resource_scope': unit, 'peak_cgroup_bytes_sampled': peak,
             'elapsed_seconds': round(time.monotonic() - started, 3),
-            'abort': abort, 'hard_memory_bytes': 4 * gib,
-            'early_stop_bytes': 3 * gib, 'cpu_quota_percent': 100,
+            'abort': abort, 'hard_memory_bytes': memory_budget,
+            'early_stop_bytes': early_stop, 'cpu_quota_percent': 100,
             'cpu_affinity': [cpu],
             'task_ceiling': options.task_ceiling, 'peak_tasks_sampled': peak_tasks,
             'resource_events_last_observed': events,

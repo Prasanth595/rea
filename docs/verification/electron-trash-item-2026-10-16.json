@@ -1,0 +1,2579 @@
+{
+  "issue": 3474,
+  "pull_request": 3559,
+  "fresh_main_base": "d5be402fb3dbfc56ac9854c27b5538df20cc2437",
+  "original_contributor_commit": "553b816d97b489bf038c026979d4ce5a9af5e7b1",
+  "integration_commit": "2207e9d9768d9773de0b7edcba4a4eba8aae7d6a",
+  "verified_source": "955d77a0636324fad8a8185130ba6867520ca535",
+  "inputs": {
+    "application": {
+      "url": "https://github.com/VSCodium/vscodium/releases/download/1.140.06880/VSCodium-linux-x64-1.140.06880.tar.gz",
+      "release": "https://github.com/VSCodium/vscodium/releases/tag/1.140.06880",
+      "bytes": 212538680,
+      "sha256": "61223b74f9e40834117311ec4177cb386d09b84c1aae4f9e674c96580569cef3",
+      "digest_source": "Official GitHub release asset digest queried before download",
+      "package_version": "1.140.06880",
+      "acquisition_seconds": 27.879422591999173,
+      "root": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_"
+    },
+    "generic_runtime": {
+      "version": "43.7.3",
+      "url": "https://github.com/electron/electron/releases/download/v43.7.3/electron-v43.7.3-linux-x64.zip",
+      "bytes": 127019681,
+      "sha256": "37337496ed2b18b9e247dc9ddbbca8519ecdf3577eae8bfbdeecad2925ee1945",
+      "official_shasums_line": "37337496ed2b18b9e247dc9ddbbca8519ecdf3577eae8bfbdeecad2925ee1945 *electron-v43.7.3-linux-x64.zip",
+      "official_shasums_sha256": "f6f043c23f000eb57b4a6aece3a1c20799856f1b39bb7daa6c0f01cc574439ae",
+      "binary": "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+      "binary_sha256": "b315f26fdb0db1764ae6184125686aa5ed4f92a755abc01d95277b91994eb3c3",
+      "scope": "Explicit generic runtime substitution; no vendor-binary compatibility claim or fuse modification."
+    },
+    "scope": "Unchanged VSCodium1.140.06880, explicit official genericElectron43.7.3, owned copy ofREA README. Generic ELF equals original codium ELF; installed resource layouts differ. No packaged standard-workflow compatibility claim."
+  },
+  "real_application": {
+    "scope": "Actual Explorer UI -> app native file service -> production patchShell factory, with bounded atomic test recorder and transparent native-call observer. Not full hook/provider/Evidence.",
+    "baseline": {
+      "trial": "/tmp/rea-3474-vscodium-public-baseline/vscodium-shell-w65uzazx",
+      "source_pins": {
+        "verifier_source": "955d77a0636324fad8a8185130ba6867520ca535",
+        "runtime_source": "360626434d21d19dc9402196630f48a249c25245",
+        "inputs": {
+          "runtime_root": "/home/yann/yann/rea-electron-cancellation-main-control-20261016",
+          "node": "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+          "executable": "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+          "application": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+          "output": "/tmp/rea-3474-vscodium-public-baseline",
+          "memory_gib": 8
+        },
+        "files": {
+          "runner": {
+            "path": "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-shell-run.py",
+            "sha256": "d0ce042bd5dd43ff24da936f11ec4bb31ee5931d0ec6471edd518ee14fed8c69"
+          },
+          "verifier": {
+            "path": "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-shell-producer.mjs",
+            "sha256": "69a3968d7e796437158a3de6f0419a39fe2b6d6a436c0ecab4ea1b812d6e18ed"
+          },
+          "resource-run": {
+            "path": "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/resource-run.py",
+            "sha256": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33"
+          },
+          "resource-payload": {
+            "path": "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/resource_payload.py",
+            "sha256": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+          },
+          "shell-boundary": {
+            "path": "/home/yann/yann/rea-electron-cancellation-main-control-20261016/scripts/electron-active-hook-boundaries.cjs",
+            "sha256": "dae5ac52856a30566ec027cb15ddd46c2920c8defdec11512b6c1f189314d45c"
+          },
+          "shared-environment": {
+            "path": "/home/yann/yann/rea-electron-cancellation-main-control-20261016/dist/browser/PlaywrightElectronActiveProvider.js",
+            "sha256": "1a0efd2c365d48d5f7c533351e3ad1f230e1f76ed1a754ee49e488908f73dc1c"
+          },
+          "owned-copy-source": {
+            "path": "/home/yann/yann/rea-electron-cancellation-main-control-20261016/README.md",
+            "sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2"
+          },
+          "node": {
+            "path": "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+            "sha256": "41a74efb34cbde5c7632cdac0cf8bd1a14d0b8d73dc1e82755014d9a9ce70f5c"
+          },
+          "selected-executable": {
+            "path": "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+            "sha256": "b315f26fdb0db1764ae6184125686aa5ed4f92a755abc01d95277b91994eb3c3"
+          }
+        }
+      },
+      "receipt": {
+        "log_sha256": "617c7e309e6f2791b02d766ce3bca8e03821f6ccd8b2a6570a7a67b9b46791cb",
+        "wall_seconds": 16.392,
+        "payload_exit_code": 1,
+        "payload_exit_cpu_usec": 16114818,
+        "payload_exit_peak_cgroup_bytes": 1173217280,
+        "payload_resource_observation_verified": true,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-341060002c6046a9add7813ce25c8952.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      },
+      "report": {
+        "scope": "production-shell-boundary-with-test-recorder",
+        "runtime": "/home/yann/yann/rea-electron-cancellation-main-control-20261016",
+        "executable": "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+        "application": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "boundary_sha256": "dae5ac52856a30566ec027cb15ddd46c2920c8defdec11512b6c1f189314d45c",
+        "engine": {
+          "node": "24.21.0",
+          "electron": "43.7.3",
+          "application_path": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+          "full_hook_installed": false
+        },
+        "settings": {
+          "files.enableTrash": true,
+          "explorer.confirmDelete": false,
+          "workbench.startupEditor": "none",
+          "window.menuStyle": "custom",
+          "window.titleBarStyle": "custom",
+          "security.workspace.trust.enabled": false,
+          "update.mode": "none",
+          "telemetry.telemetryLevel": "off",
+          "extensions.autoCheckUpdates": false,
+          "extensions.autoUpdate": false
+        },
+        "elapsed_ms": 15473.735777,
+        "probe": null,
+        "observation": {
+          "engine": {
+            "node": "24.21.0",
+            "electron": "43.7.3",
+            "application_path": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+            "full_hook_installed": false
+          },
+          "events": [],
+          "dropped": 0,
+          "native_calls": {
+            "total": 1,
+            "matching_owned_path": 1
+          }
+        },
+        "failure": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    dropped: 0,\n    engine: {\n      application_path: '/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app',\n      electron: '43.7.3',\n...\n    },\n+   events: [],\n-   events: [\n-     {\n-       argument_count: 1,\n-       error: true,\n-       event: 'trashItem',\n-       kind: 'shell-attempt',\n-       matches_owned_path: true,\n-       phase: 'blocked'\n-     }\n-   ],\n    native_calls: {\n+     matching_owned_path: 1,\n+     total: 1\n-     matching_owned_path: 0,\n-     total: 0\n    }\n  }\n",
+        "close_status": "window-close-completed",
+        "scenario_ok": false,
+        "full_hook_provider_workflow": "NOT_EXECUTED"
+      },
+      "invocation": [
+        "/usr/bin/python3",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/resource-run.py",
+        "--memory-gib",
+        "8",
+        "--observe-payload-exit",
+        "--",
+        "env",
+        "PATH=/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin:/usr/bin:/bin",
+        "GOMAXPROCS=1",
+        "GOMEMLIMIT=3GiB",
+        "UV_THREADPOOL_SIZE=1",
+        "NODE_OPTIONS=--max-old-space-size=2048",
+        "TMPDIR=/tmp/rea-3474-vscodium-public-baseline/vscodium-shell-w65uzazx/tmp",
+        "xvfb-run",
+        "-a",
+        "-f",
+        "/tmp/rea-3474-vscodium-public-baseline/vscodium-shell-w65uzazx/Xauthority",
+        "--server-args=-screen 0 1280x900x24 -nolisten tcp -ac",
+        "bwrap",
+        "--die-with-parent",
+        "--new-session",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev-bind",
+        "/dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--bind",
+        "/tmp/rea-3474-vscodium-public-baseline/vscodium-shell-w65uzazx",
+        "/tmp/rea-3474-vscodium-public-baseline/vscodium-shell-w65uzazx",
+        "--bind",
+        "/tmp/rea-3474-vscodium-public-baseline/vscodium-shell-w65uzazx/config",
+        "/home/yann/.config",
+        "--bind",
+        "/tmp/rea-3474-vscodium-public-baseline/vscodium-shell-w65uzazx/local",
+        "/home/yann/.local",
+        "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-shell-producer.mjs",
+        "--runtime-root",
+        "/home/yann/yann/rea-electron-cancellation-main-control-20261016",
+        "--executable",
+        "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+        "--application",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "--trial-root",
+        "/tmp/rea-3474-vscodium-public-baseline/vscodium-shell-w65uzazx"
+      ],
+      "driver_execution": {
+        "exit_code": 1,
+        "driver_wall_seconds": 16.85307701502461,
+        "scope": "Driver wall includes source hashing/preparation; acquisition and agent costs unmeasured."
+      },
+      "input_after_scope": {
+        "status": "present",
+        "bytes": 22177,
+        "sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2"
+      }
+    },
+    "candidate": {
+      "trial": "/tmp/rea-3474-vscodium-public-candidate/vscodium-shell-5xa4hl66",
+      "source_pins": {
+        "verifier_source": "955d77a0636324fad8a8185130ba6867520ca535",
+        "runtime_source": "955d77a0636324fad8a8185130ba6867520ca535",
+        "inputs": {
+          "runtime_root": "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+          "node": "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+          "executable": "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+          "application": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+          "output": "/tmp/rea-3474-vscodium-public-candidate",
+          "memory_gib": 8
+        },
+        "files": {
+          "runner": {
+            "path": "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-shell-run.py",
+            "sha256": "d0ce042bd5dd43ff24da936f11ec4bb31ee5931d0ec6471edd518ee14fed8c69"
+          },
+          "verifier": {
+            "path": "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-shell-producer.mjs",
+            "sha256": "69a3968d7e796437158a3de6f0419a39fe2b6d6a436c0ecab4ea1b812d6e18ed"
+          },
+          "resource-run": {
+            "path": "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/resource-run.py",
+            "sha256": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33"
+          },
+          "resource-payload": {
+            "path": "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/resource_payload.py",
+            "sha256": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+          },
+          "shell-boundary": {
+            "path": "/home/yann/yann/rea-electron-trash-item-3474-20261016/scripts/electron-active-hook-boundaries.cjs",
+            "sha256": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1"
+          },
+          "shared-environment": {
+            "path": "/home/yann/yann/rea-electron-trash-item-3474-20261016/dist/browser/PlaywrightElectronActiveProvider.js",
+            "sha256": "1a0efd2c365d48d5f7c533351e3ad1f230e1f76ed1a754ee49e488908f73dc1c"
+          },
+          "owned-copy-source": {
+            "path": "/home/yann/yann/rea-electron-trash-item-3474-20261016/README.md",
+            "sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2"
+          },
+          "node": {
+            "path": "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+            "sha256": "41a74efb34cbde5c7632cdac0cf8bd1a14d0b8d73dc1e82755014d9a9ce70f5c"
+          },
+          "selected-executable": {
+            "path": "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+            "sha256": "b315f26fdb0db1764ae6184125686aa5ed4f92a755abc01d95277b91994eb3c3"
+          }
+        }
+      },
+      "receipt": {
+        "log_sha256": "852c40389c26bee6f13bdaef8bb66aacbed0342f48a7c13fdbc7971a9d6ea372",
+        "wall_seconds": 15.03,
+        "payload_exit_code": 0,
+        "payload_exit_cpu_usec": 14738146,
+        "payload_exit_peak_cgroup_bytes": 1092239360,
+        "payload_resource_observation_verified": false,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-88efd3e16d6649ffa666b3cd5a51076b.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      },
+      "report": {
+        "scope": "production-shell-boundary-with-test-recorder",
+        "runtime": "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "executable": "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+        "application": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "boundary_sha256": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1",
+        "engine": {
+          "node": "24.21.0",
+          "electron": "43.7.3",
+          "application_path": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+          "full_hook_installed": false
+        },
+        "settings": {
+          "files.enableTrash": true,
+          "explorer.confirmDelete": false,
+          "workbench.startupEditor": "none",
+          "window.menuStyle": "custom",
+          "window.titleBarStyle": "custom",
+          "security.workspace.trust.enabled": false,
+          "update.mode": "none",
+          "telemetry.telemetryLevel": "off",
+          "extensions.autoCheckUpdates": false,
+          "extensions.autoUpdate": false
+        },
+        "elapsed_ms": 14064.076287,
+        "probe": {
+          "input_path": "/tmp/rea-3474-vscodium-public-candidate/vscodium-shell-5xa4hl66/workspace/README-copy.md",
+          "input_sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2",
+          "input_bytes": 22177,
+          "before_trash_count": 0,
+          "file_unchanged": true,
+          "observation": {
+            "engine": {
+              "node": "24.21.0",
+              "electron": "43.7.3",
+              "application_path": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+              "full_hook_installed": false
+            },
+            "events": [
+              {
+                "kind": "shell-attempt",
+                "event": "trashItem",
+                "phase": "blocked",
+                "error": true,
+                "argument_count": 1,
+                "matches_owned_path": true
+              }
+            ],
+            "dropped": 0,
+            "native_calls": {
+              "total": 0,
+              "matching_owned_path": 0
+            }
+          },
+          "page_errors": []
+        },
+        "observation": {
+          "engine": {
+            "node": "24.21.0",
+            "electron": "43.7.3",
+            "application_path": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+            "full_hook_installed": false
+          },
+          "events": [
+            {
+              "kind": "shell-attempt",
+              "event": "trashItem",
+              "phase": "blocked",
+              "error": true,
+              "argument_count": 1,
+              "matches_owned_path": true
+            }
+          ],
+          "dropped": 0,
+          "native_calls": {
+            "total": 0,
+            "matching_owned_path": 0
+          }
+        },
+        "failure": null,
+        "close_status": "window-close-completed",
+        "scenario_ok": true,
+        "full_hook_provider_workflow": "NOT_EXECUTED"
+      },
+      "invocation": [
+        "/usr/bin/python3",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/resource-run.py",
+        "--memory-gib",
+        "8",
+        "--observe-payload-exit",
+        "--",
+        "env",
+        "PATH=/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin:/usr/bin:/bin",
+        "GOMAXPROCS=1",
+        "GOMEMLIMIT=3GiB",
+        "UV_THREADPOOL_SIZE=1",
+        "NODE_OPTIONS=--max-old-space-size=2048",
+        "TMPDIR=/tmp/rea-3474-vscodium-public-candidate/vscodium-shell-5xa4hl66/tmp",
+        "xvfb-run",
+        "-a",
+        "-f",
+        "/tmp/rea-3474-vscodium-public-candidate/vscodium-shell-5xa4hl66/Xauthority",
+        "--server-args=-screen 0 1280x900x24 -nolisten tcp -ac",
+        "bwrap",
+        "--die-with-parent",
+        "--new-session",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev-bind",
+        "/dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--bind",
+        "/tmp/rea-3474-vscodium-public-candidate/vscodium-shell-5xa4hl66",
+        "/tmp/rea-3474-vscodium-public-candidate/vscodium-shell-5xa4hl66",
+        "--bind",
+        "/tmp/rea-3474-vscodium-public-candidate/vscodium-shell-5xa4hl66/config",
+        "/home/yann/.config",
+        "--bind",
+        "/tmp/rea-3474-vscodium-public-candidate/vscodium-shell-5xa4hl66/local",
+        "/home/yann/.local",
+        "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-shell-producer.mjs",
+        "--runtime-root",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "--executable",
+        "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+        "--application",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "--trial-root",
+        "/tmp/rea-3474-vscodium-public-candidate/vscodium-shell-5xa4hl66"
+      ],
+      "driver_execution": {
+        "exit_code": 0,
+        "driver_wall_seconds": 15.39315781602636,
+        "scope": "Driver wall includes source hashing/preparation; acquisition and agent costs unmeasured."
+      },
+      "input_after_scope": {
+        "status": "present",
+        "bytes": 22177,
+        "sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2"
+      }
+    },
+    "baseline_boundary_matches_fresh_main": true,
+    "shared_verifier_environment_input_node_and_runtime_hashes_match": true,
+    "native_filesystem_trash_completion": "NOT_ESTABLISHED; native invocation is observed separately from successful OS completion.",
+    "comparison": "Correctness only. Baseline waits5seconds for absent blocked evidence, so timings are not equivalent successful-task speed measurements."
+  },
+  "checks": {
+    "core_focused88": {
+      "source": "2207e9d9768d9773de0b7edcba4a4eba8aae7d6a",
+      "command": "npm run test:focused -- tests/boundary/browser/electronActiveHook.test.ts src/browser/PlaywrightElectronActiveProjection.test.ts tests/boundary/mcp/electronMcp.test.ts",
+      "receipt": {
+        "log_sha256": "deedde502d779a556c7a627d38ac719d3a5a50ade8b0ec60767b09fdc95f4c8c",
+        "wall_seconds": 63.859,
+        "payload_exit_code": 0,
+        "payload_exit_cpu_usec": 63146000,
+        "payload_exit_peak_cgroup_bytes": 3161767936,
+        "payload_resource_observation_verified": true,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-f0fb881b784045b1a29a81186b2396c5.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      },
+      "scope": "Controlled full-hook/projection/MCP cases. Subsequent changes affect only experiment source/harness/docs; core boundary and test sources unchanged.",
+      "execution_state": "Merge pending with staged core changes; run preceded integration commit creation.",
+      "core_files_sha256": {
+        "scripts/electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1",
+        "tests/boundary/browser/electronActiveHook.test.ts": "9491c09bec9e3d857bd900b6a5dfc7558bb8a6b9cf489ba282924af14ec89b29"
+      }
+    },
+    "base_regression_native_body": {
+      "log_sha256": "b3ee7ac40a697c80faf7a3f41cea4cdadf4d4a18adad102d0ea85d5914cbefbc",
+      "wall_seconds": 1.552,
+      "payload_exit_code": 1,
+      "payload_exit_cpu_usec": 1354367,
+      "payload_exit_peak_cgroup_bytes": 204816384,
+      "payload_resource_observation_verified": true,
+      "abort": null,
+      "hard_memory_bytes": 8589934592,
+      "early_stop_bytes": 6442450944,
+      "cpu_affinity": [10],
+      "cpu_quota_percent": 100,
+      "task_ceiling": 192,
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "scope": "rea-efficiency-e8f65d4f3a0a4d39ad22f54c5f4df884.scope",
+      "scope_poststate": "ActiveState=inactive\nSubState=dead",
+      "observer_sources_sha256": {
+        "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+        "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+      }
+    },
+    "base_regression_missing_rejection": {
+      "log_sha256": "84b61f66f69b51136d3c802936e76c501b9607acb32510d9e1659b6c72da0531",
+      "wall_seconds": 1.476,
+      "payload_exit_code": 1,
+      "payload_exit_cpu_usec": 1307558,
+      "payload_exit_peak_cgroup_bytes": 205746176,
+      "payload_resource_observation_verified": true,
+      "abort": null,
+      "hard_memory_bytes": 8589934592,
+      "early_stop_bytes": 6442450944,
+      "cpu_affinity": [10],
+      "cpu_quota_percent": 100,
+      "task_ceiling": 192,
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "scope": "rea-efficiency-e28e1ce9c7f74b2eb386f06546cad4b4.scope",
+      "scope_poststate": "ActiveState=inactive\nSubState=dead",
+      "observer_sources_sha256": {
+        "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+        "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+      }
+    },
+    "initial_static": {
+      "source": "954e84e9f0f8e59864e6bac54db5dc7c46889425",
+      "receipt": {
+        "log_sha256": "c3b044c15112c56eba77d09bb8a0b1a2030f1dac11fd1b913dc3b52a12861689",
+        "wall_seconds": 92.567,
+        "payload_exit_code": 0,
+        "payload_exit_cpu_usec": 91811527,
+        "payload_exit_peak_cgroup_bytes": 4352585728,
+        "payload_resource_observation_verified": true,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-ce6b04f7d5344e57af99773ea01a157a.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      }
+    },
+    "final_static": {
+      "source": "955d77a0636324fad8a8185130ba6867520ca535",
+      "command": "npm run check:fast",
+      "receipt": {
+        "log_sha256": "dc066a1bf9c8f5614303f5cdffcf649aa6d4e1f34e9c88d5e0dbec5492852d73",
+        "wall_seconds": 15.27,
+        "payload_exit_code": 0,
+        "payload_exit_cpu_usec": 13675078,
+        "payload_exit_peak_cgroup_bytes": 829698048,
+        "payload_resource_observation_verified": true,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-89dbe9b70b42435795cf407240f38c28.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      }
+    },
+    "resource_default4": {
+      "log_sha256": "3db7dddf6280e1416e7b8b776c4befa13b9f8a4ba972053c0d3f7e3fa8a2cc46",
+      "wall_seconds": 0.26,
+      "payload_exit_code": 0,
+      "payload_exit_cpu_usec": 30011,
+      "payload_exit_peak_cgroup_bytes": 6455296,
+      "payload_resource_observation_verified": true,
+      "abort": null,
+      "hard_memory_bytes": 4294967296,
+      "early_stop_bytes": 3221225472,
+      "cpu_affinity": [10],
+      "cpu_quota_percent": 100,
+      "task_ceiling": 192,
+      "memory_events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "scope": "rea-efficiency-f14d310ad53849ab84c32a961538d008.scope",
+      "scope_poststate": "ActiveState=inactive\nSubState=dead",
+      "observer_sources_sha256": {
+        "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+        "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+      }
+    },
+    "docs": {
+      "command": "npm run docs:check",
+      "receipt": {
+        "log_sha256": "3be446e10172910af83dcd4189f5eb69fd6981639f23d82ea78828a2cea9f896",
+        "wall_seconds": 13.273,
+        "payload_exit_code": 0,
+        "payload_exit_cpu_usec": 12848306,
+        "payload_exit_peak_cgroup_bytes": 487800832,
+        "payload_resource_observation_verified": true,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-156e8cbdc3c24887863d5de224c3133f.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      }
+    }
+  },
+  "historical_attempts": [
+    {
+      "label": "vscodium-first",
+      "meaning": "Original packaged executable: standard preload absent; no UI deletion action reached.",
+      "trial": "/tmp/rea-3474-vscodium-20261016-w570jt8h",
+      "source_pins": {
+        "source": "6f42620839439d30d75984e551528c3da5371555",
+        "status": "",
+        "files": {
+          "scripts/electron-active-hook.cjs": "c18dd3a3fb374d75d0fe545ac425e86d177c11753c10c188ba844e81e4857fa6",
+          "scripts/electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1",
+          "experiments/analysis-efficiency/vscodium-trash-boundary.mjs": "2e751e7279b5064775b2b07a46451f4eae505cf1af0d852d77628c1a2567e754",
+          "experiments/analysis-efficiency/electron-hook-identity.mjs": "c5d6f0c35f7b9451b4b260f9179440b9e5060b8008e10a8db4f61ae832cac862",
+          "dist/browser/PlaywrightElectronActiveProvider.js": "1a0efd2c365d48d5f7c533351e3ad1f230e1f76ed1a754ee49e488908f73dc1c",
+          "dist/browser/PlaywrightElectronActiveProjection.js": "9732f6422fff971b75a614225d4da69ca401552ce5a650308224ed897ce6f26c",
+          "dist/application/javascript/ElectronActiveObservationService.js": "438ad8c16239eb296ceef4ad3809377547bb4932c4c87df5d4ea3667c738bc6f"
+        }
+      },
+      "receipt": {
+        "log_sha256": "2a950a30b74c86ee1f63ce44c81a2c8ef079899ff1edc2d1853171ba3fcf2ece",
+        "wall_seconds": 2.63,
+        "payload_exit_code": 1,
+        "payload_exit_cpu_usec": 2276407,
+        "payload_exit_peak_cgroup_bytes": 290045952,
+        "payload_resource_observation_verified": true,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-d17edfe5667b4b4a9f2edd69666b69cc.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      },
+      "report": {
+        "runtime": "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "staged_hook_sha256": {
+          "electron-active-hook.cjs": "c18dd3a3fb374d75d0fe545ac425e86d177c11753c10c188ba844e81e4857fa6",
+          "electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1"
+        },
+        "engine": {
+          "node": "24.21.0",
+          "electron": "43.7.3",
+          "application_path": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app"
+        },
+        "settings": {
+          "files.enableTrash": true,
+          "explorer.confirmDelete": false,
+          "workbench.startupEditor": "none",
+          "window.menuStyle": "custom",
+          "window.titleBarStyle": "custom",
+          "security.workspace.trust.enabled": false,
+          "update.mode": "none",
+          "telemetry.telemetryLevel": "off",
+          "extensions.autoCheckUpdates": false,
+          "extensions.autoUpdate": false
+        },
+        "elapsed_ms": 1524.3769640000003,
+        "launch_transport": "standard-staged-argv",
+        "probe": null,
+        "provider_ok": false,
+        "deadline_triggered": false,
+        "error": {
+          "tag": "ProviderAdapterError",
+          "diagnostics": {
+            "message": "The canonical active hook must be installed before application actions\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+          }
+        },
+        "workflow_status": "partial-or-failed"
+      },
+      "invocation": [
+        "/usr/bin/python3",
+        "/home/yann/yann/rea-codemode-tool-design/experiments/analysis-efficiency/resource-run.py",
+        "--memory-gib",
+        "8",
+        "--observe-payload-exit",
+        "--",
+        "env",
+        "PATH=/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin:/usr/bin:/bin",
+        "GOMAXPROCS=1",
+        "GOMEMLIMIT=3GiB",
+        "UV_THREADPOOL_SIZE=1",
+        "NODE_OPTIONS=--max-old-space-size=2048",
+        "TMPDIR=/tmp/rea-3474-vscodium-20261016-w570jt8h/tmp",
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1280x900x24 -nolisten tcp -ac",
+        "bwrap",
+        "--die-with-parent",
+        "--new-session",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev-bind",
+        "/dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-w570jt8h",
+        "/tmp/rea-3474-vscodium-20261016-w570jt8h",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-w570jt8h/config",
+        "/home/yann/.config",
+        "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-trash-boundary.mjs",
+        "--runtime-root",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "--executable",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/codium",
+        "--application",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "--trial-root",
+        "/tmp/rea-3474-vscodium-20261016-w570jt8h"
+      ],
+      "input_after_scope": {
+        "status": "present",
+        "bytes": 22177,
+        "sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2"
+      }
+    },
+    {
+      "label": "vscodium-generic-first",
+      "meaning": "Matching generic runtime: hook installed, no verified window/action; cause not established in this cohort.",
+      "trial": "/tmp/rea-3474-vscodium-20261016-db3b155r",
+      "source_pins": {
+        "source": "6f42620839439d30d75984e551528c3da5371555",
+        "status": "",
+        "files": {
+          "scripts/electron-active-hook.cjs": "c18dd3a3fb374d75d0fe545ac425e86d177c11753c10c188ba844e81e4857fa6",
+          "scripts/electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1",
+          "experiments/analysis-efficiency/vscodium-trash-boundary.mjs": "2e751e7279b5064775b2b07a46451f4eae505cf1af0d852d77628c1a2567e754",
+          "experiments/analysis-efficiency/electron-hook-identity.mjs": "c5d6f0c35f7b9451b4b260f9179440b9e5060b8008e10a8db4f61ae832cac862",
+          "dist/browser/PlaywrightElectronActiveProvider.js": "1a0efd2c365d48d5f7c533351e3ad1f230e1f76ed1a754ee49e488908f73dc1c",
+          "dist/browser/PlaywrightElectronActiveProjection.js": "9732f6422fff971b75a614225d4da69ca401552ce5a650308224ed897ce6f26c",
+          "dist/application/javascript/ElectronActiveObservationService.js": "438ad8c16239eb296ceef4ad3809377547bb4932c4c87df5d4ea3667c738bc6f"
+        }
+      },
+      "receipt": {
+        "log_sha256": "7fe6ceea2e7f4cc0887cd20238179672c20f12b578a6019521640db3784d22a9",
+        "wall_seconds": 2.56,
+        "payload_exit_code": 1,
+        "payload_exit_cpu_usec": 2271483,
+        "payload_exit_peak_cgroup_bytes": 285978624,
+        "payload_resource_observation_verified": true,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-6babe50eb10546d3ba5c91cb9520f8f6.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      },
+      "report": {
+        "runtime": "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "staged_hook_sha256": {
+          "electron-active-hook.cjs": "c18dd3a3fb374d75d0fe545ac425e86d177c11753c10c188ba844e81e4857fa6",
+          "electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1"
+        },
+        "engine": {
+          "node": "24.21.0",
+          "electron": "43.7.3",
+          "application_path": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app"
+        },
+        "settings": {
+          "files.enableTrash": true,
+          "explorer.confirmDelete": false,
+          "workbench.startupEditor": "none",
+          "window.menuStyle": "custom",
+          "window.titleBarStyle": "custom",
+          "security.workspace.trust.enabled": false,
+          "update.mode": "none",
+          "telemetry.telemetryLevel": "off",
+          "extensions.autoCheckUpdates": false,
+          "extensions.autoUpdate": false
+        },
+        "elapsed_ms": 1558.903409,
+        "launch_transport": "standard-staged-argv",
+        "probe": null,
+        "provider_ok": false,
+        "deadline_triggered": false,
+        "error": {
+          "tag": "ProviderAdapterError",
+          "diagnostics": {
+            "message": "electronApplication.firstWindow: Target page, context or browser has been closed"
+          }
+        },
+        "workflow_status": "partial-or-failed"
+      },
+      "invocation": [
+        "/usr/bin/python3",
+        "/home/yann/yann/rea-codemode-tool-design/experiments/analysis-efficiency/resource-run.py",
+        "--memory-gib",
+        "8",
+        "--observe-payload-exit",
+        "--",
+        "env",
+        "PATH=/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin:/usr/bin:/bin",
+        "GOMAXPROCS=1",
+        "GOMEMLIMIT=3GiB",
+        "UV_THREADPOOL_SIZE=1",
+        "NODE_OPTIONS=--max-old-space-size=2048",
+        "TMPDIR=/tmp/rea-3474-vscodium-20261016-db3b155r/tmp",
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1280x900x24 -nolisten tcp -ac",
+        "bwrap",
+        "--die-with-parent",
+        "--new-session",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev-bind",
+        "/dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-db3b155r",
+        "/tmp/rea-3474-vscodium-20261016-db3b155r",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-db3b155r/config",
+        "/home/yann/.config",
+        "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-trash-boundary.mjs",
+        "--runtime-root",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "--executable",
+        "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+        "--application",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "--trial-root",
+        "/tmp/rea-3474-vscodium-20261016-db3b155r"
+      ],
+      "input_after_scope": {
+        "status": "present",
+        "bytes": 22177,
+        "sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2"
+      }
+    },
+    {
+      "label": "vscodium-inspector-first",
+      "meaning": "Discarded test Inspector adapter: execution context destroyed; no UI proof. Fixture cleanup also failed.",
+      "trial": "/tmp/rea-3474-vscodium-20261016-oawycx2e",
+      "source_pins": {
+        "source": "b35ab48772c60d8b22374bd8292cd1f360acede1",
+        "status": "",
+        "files": {
+          "scripts/electron-active-hook.cjs": "c18dd3a3fb374d75d0fe545ac425e86d177c11753c10c188ba844e81e4857fa6",
+          "scripts/electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1",
+          "experiments/analysis-efficiency/vscodium-trash-boundary.mjs": "57aa86c17a09f3d095e3557e7e531abdc6c41365abac3f7e1192412c3a120098",
+          "experiments/analysis-efficiency/electron-hook-identity.mjs": "c5d6f0c35f7b9451b4b260f9179440b9e5060b8008e10a8db4f61ae832cac862",
+          "dist/browser/PlaywrightElectronActiveProvider.js": "1a0efd2c365d48d5f7c533351e3ad1f230e1f76ed1a754ee49e488908f73dc1c",
+          "dist/browser/PlaywrightElectronActiveProjection.js": "9732f6422fff971b75a614225d4da69ca401552ce5a650308224ed897ce6f26c",
+          "dist/application/javascript/ElectronActiveObservationService.js": "438ad8c16239eb296ceef4ad3809377547bb4932c4c87df5d4ea3667c738bc6f"
+        }
+      },
+      "receipt": {
+        "log_sha256": "0eb295fc229af369815d7f2bae8e371b6f98cb1f2077dd51de3abbcbe6041e89",
+        "wall_seconds": 2.581,
+        "payload_exit_code": 5,
+        "payload_exit_cpu_usec": 2268119,
+        "payload_exit_peak_cgroup_bytes": 285483008,
+        "payload_resource_observation_verified": false,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-97b1d80ff2f244a39995446ba293d5f0.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      },
+      "report": {
+        "runtime": "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "staged_hook_sha256": {
+          "electron-active-hook.cjs": "c18dd3a3fb374d75d0fe545ac425e86d177c11753c10c188ba844e81e4857fa6",
+          "electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1"
+        },
+        "settings": {
+          "files.enableTrash": true,
+          "explorer.confirmDelete": false,
+          "workbench.startupEditor": "none",
+          "window.menuStyle": "custom",
+          "window.titleBarStyle": "custom",
+          "security.workspace.trust.enabled": false,
+          "update.mode": "none",
+          "telemetry.telemetryLevel": "off",
+          "extensions.autoCheckUpdates": false,
+          "extensions.autoUpdate": false
+        },
+        "elapsed_ms": 1340.920061,
+        "launch_transport": "explicit-inspector-hook-after-start",
+        "probe": null,
+        "provider_ok": false,
+        "deadline_triggered": false,
+        "error": {
+          "tag": "ProviderAdapterError",
+          "diagnostics": {
+            "message": "electronApplication.evaluate: Execution context was destroyed, most likely because of a navigation."
+          }
+        },
+        "workflow_status": "partial-or-failed"
+      },
+      "invocation": [
+        "/usr/bin/python3",
+        "/home/yann/yann/rea-codemode-tool-design/experiments/analysis-efficiency/resource-run.py",
+        "--memory-gib",
+        "8",
+        "--observe-payload-exit",
+        "--",
+        "env",
+        "PATH=/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin:/usr/bin:/bin",
+        "GOMAXPROCS=1",
+        "GOMEMLIMIT=3GiB",
+        "UV_THREADPOOL_SIZE=1",
+        "NODE_OPTIONS=--max-old-space-size=2048",
+        "TMPDIR=/tmp/rea-3474-vscodium-20261016-oawycx2e/tmp",
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1280x900x24 -nolisten tcp -ac",
+        "bwrap",
+        "--die-with-parent",
+        "--new-session",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev-bind",
+        "/dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-oawycx2e",
+        "/tmp/rea-3474-vscodium-20261016-oawycx2e",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-oawycx2e/config",
+        "/home/yann/.config",
+        "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-trash-boundary.mjs",
+        "--runtime-root",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "--executable",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/codium",
+        "--application",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "--trial-root",
+        "/tmp/rea-3474-vscodium-20261016-oawycx2e",
+        "--inspector-hook-transport"
+      ],
+      "input_after_scope": {
+        "status": "present",
+        "bytes": 22177,
+        "sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2"
+      }
+    },
+    {
+      "label": "vscodium-inspector-packaged-args",
+      "meaning": "Discarded adapter with exact generated arguments removed: execution context destroyed.",
+      "trial": "/tmp/rea-3474-vscodium-20261016-_0y39yen",
+      "source_pins": {
+        "source": "9b7dc8e95ac77060e96f09ec4685d7a5b8465727",
+        "status": "",
+        "files": {
+          "scripts/electron-active-hook.cjs": "c18dd3a3fb374d75d0fe545ac425e86d177c11753c10c188ba844e81e4857fa6",
+          "scripts/electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1",
+          "experiments/analysis-efficiency/vscodium-trash-boundary.mjs": "655fb7d0f16973eaa2ca1f3519ba9fb17368209382d15e400022240dcc8fbf70",
+          "experiments/analysis-efficiency/electron-hook-identity.mjs": "c5d6f0c35f7b9451b4b260f9179440b9e5060b8008e10a8db4f61ae832cac862",
+          "dist/browser/PlaywrightElectronActiveProvider.js": "1a0efd2c365d48d5f7c533351e3ad1f230e1f76ed1a754ee49e488908f73dc1c",
+          "dist/browser/PlaywrightElectronActiveProjection.js": "9732f6422fff971b75a614225d4da69ca401552ce5a650308224ed897ce6f26c",
+          "dist/application/javascript/ElectronActiveObservationService.js": "438ad8c16239eb296ceef4ad3809377547bb4932c4c87df5d4ea3667c738bc6f"
+        }
+      },
+      "receipt": {
+        "log_sha256": "c7b8c07a3c18d11559e1e94d955537337b4a36177813c2b388dccbbb5af38bd7",
+        "wall_seconds": 4.485,
+        "payload_exit_code": 1,
+        "payload_exit_cpu_usec": 4152344,
+        "payload_exit_peak_cgroup_bytes": 216109056,
+        "payload_resource_observation_verified": false,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-7fcefd6fe80b4888972b7c6cfb764d5b.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      },
+      "report": {
+        "runtime": "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "staged_hook_sha256": {
+          "electron-active-hook.cjs": "c18dd3a3fb374d75d0fe545ac425e86d177c11753c10c188ba844e81e4857fa6",
+          "electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1"
+        },
+        "process_output_prefix_tails": {
+          "stdout": {
+            "observed_bytes": 0,
+            "tail": ""
+          },
+          "stderr": {
+            "observed_bytes": 0,
+            "tail": ""
+          }
+        },
+        "settings": {
+          "files.enableTrash": true,
+          "explorer.confirmDelete": false,
+          "workbench.startupEditor": "none",
+          "window.menuStyle": "custom",
+          "window.titleBarStyle": "custom",
+          "security.workspace.trust.enabled": false,
+          "update.mode": "none",
+          "telemetry.telemetryLevel": "off",
+          "extensions.autoCheckUpdates": false,
+          "extensions.autoUpdate": false
+        },
+        "elapsed_ms": 2430.77452,
+        "launch_transport": "explicit-inspector-hook-after-start",
+        "probe": null,
+        "provider_ok": false,
+        "deadline_triggered": false,
+        "error": {
+          "tag": "ProviderAdapterError",
+          "diagnostics": {
+            "message": "electronApplication.evaluate: Execution context was destroyed, most likely because of a navigation."
+          }
+        },
+        "workflow_status": "partial-or-failed"
+      },
+      "invocation": [
+        "/usr/bin/python3",
+        "/home/yann/yann/rea-codemode-tool-design/experiments/analysis-efficiency/resource-run.py",
+        "--memory-gib",
+        "8",
+        "--observe-payload-exit",
+        "--",
+        "env",
+        "PATH=/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin:/usr/bin:/bin",
+        "GOMAXPROCS=1",
+        "GOMEMLIMIT=3GiB",
+        "UV_THREADPOOL_SIZE=1",
+        "NODE_OPTIONS=--max-old-space-size=2048",
+        "TMPDIR=/tmp/rea-3474-vscodium-20261016-_0y39yen/tmp",
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1280x900x24 -nolisten tcp -ac",
+        "bwrap",
+        "--die-with-parent",
+        "--new-session",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev-bind",
+        "/dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-_0y39yen",
+        "/tmp/rea-3474-vscodium-20261016-_0y39yen",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-_0y39yen/config",
+        "/home/yann/.config",
+        "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-trash-boundary.mjs",
+        "--runtime-root",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "--executable",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/codium",
+        "--application",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "--trial-root",
+        "/tmp/rea-3474-vscodium-20261016-_0y39yen",
+        "--inspector-hook-transport"
+      ],
+      "input_after_scope": {
+        "status": "present",
+        "bytes": 22177,
+        "sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2"
+      }
+    },
+    {
+      "label": "vscodium-debug-startup",
+      "meaning": "Diagnostic run: read-only namespace lacked .local/state/VSCodium; no deletion proof.",
+      "trial": "/tmp/rea-3474-vscodium-20261016-chvz8trw",
+      "source_pins": {
+        "source": "9b7dc8e95ac77060e96f09ec4685d7a5b8465727",
+        "status": "",
+        "files": {
+          "scripts/electron-active-hook.cjs": "c18dd3a3fb374d75d0fe545ac425e86d177c11753c10c188ba844e81e4857fa6",
+          "scripts/electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1",
+          "experiments/analysis-efficiency/vscodium-trash-boundary.mjs": "655fb7d0f16973eaa2ca1f3519ba9fb17368209382d15e400022240dcc8fbf70",
+          "experiments/analysis-efficiency/electron-hook-identity.mjs": "c5d6f0c35f7b9451b4b260f9179440b9e5060b8008e10a8db4f61ae832cac862",
+          "dist/browser/PlaywrightElectronActiveProvider.js": "1a0efd2c365d48d5f7c533351e3ad1f230e1f76ed1a754ee49e488908f73dc1c",
+          "dist/browser/PlaywrightElectronActiveProjection.js": "9732f6422fff971b75a614225d4da69ca401552ce5a650308224ed897ce6f26c",
+          "dist/application/javascript/ElectronActiveObservationService.js": "438ad8c16239eb296ceef4ad3809377547bb4932c4c87df5d4ea3667c738bc6f"
+        }
+      },
+      "receipt": {
+        "log_sha256": "5c5af115c4e11519c2108e24579b5ccf47b574b02c9298d5f0f92440c9c9b94c",
+        "wall_seconds": 4.559,
+        "payload_exit_code": 1,
+        "payload_exit_cpu_usec": 4254790,
+        "payload_exit_peak_cgroup_bytes": 263069696,
+        "payload_resource_observation_verified": false,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-6c40767c545a4d6bb09268b15f8c956c.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      },
+      "report": {
+        "runtime": "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "staged_hook_sha256": {
+          "electron-active-hook.cjs": "c18dd3a3fb374d75d0fe545ac425e86d177c11753c10c188ba844e81e4857fa6",
+          "electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1"
+        },
+        "engine": {
+          "node": "24.21.0",
+          "electron": "43.7.3",
+          "application_path": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app"
+        },
+        "process_output_prefix_tails": {
+          "stdout": {
+            "observed_bytes": 0,
+            "tail": ""
+          },
+          "stderr": {
+            "observed_bytes": 109,
+            "tail": "Warning: 'remote-debugging-port' is not in the list of known options, but still passed to Electron/Chromium.\n"
+          }
+        },
+        "settings": {
+          "files.enableTrash": true,
+          "explorer.confirmDelete": false,
+          "workbench.startupEditor": "none",
+          "window.menuStyle": "custom",
+          "window.titleBarStyle": "custom",
+          "security.workspace.trust.enabled": false,
+          "update.mode": "none",
+          "telemetry.telemetryLevel": "off",
+          "extensions.autoCheckUpdates": false,
+          "extensions.autoUpdate": false
+        },
+        "elapsed_ms": 2582.146448,
+        "launch_transport": "explicit-inspector-hook-after-start",
+        "probe": null,
+        "provider_ok": false,
+        "deadline_triggered": false,
+        "error": {
+          "tag": "ProviderAdapterError",
+          "diagnostics": {
+            "message": "electronApplication.evaluate: TypeError: A dynamic import callback was not specified.\n    at importModuleDynamicallyCallback (node:internal/modules/esm/utils:280:9)\n    at eval (eval at evaluate (:290:30), <anonymous>:2:35)\n    at UtilityScript.evaluate (<anonymous>:292:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)"
+          }
+        },
+        "workflow_status": "partial-or-failed"
+      },
+      "invocation": [
+        "/usr/bin/python3",
+        "/home/yann/yann/rea-codemode-tool-design/experiments/analysis-efficiency/resource-run.py",
+        "--memory-gib",
+        "8",
+        "--observe-payload-exit",
+        "--",
+        "env",
+        "PATH=/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin:/usr/bin:/bin",
+        "GOMAXPROCS=1",
+        "GOMEMLIMIT=3GiB",
+        "UV_THREADPOOL_SIZE=1",
+        "DEBUG=pw:browser",
+        "NODE_OPTIONS=--max-old-space-size=2048",
+        "TMPDIR=/tmp/rea-3474-vscodium-20261016-chvz8trw/tmp",
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1280x900x24 -nolisten tcp -ac",
+        "bwrap",
+        "--die-with-parent",
+        "--new-session",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev-bind",
+        "/dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-chvz8trw",
+        "/tmp/rea-3474-vscodium-20261016-chvz8trw",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-chvz8trw/config",
+        "/home/yann/.config",
+        "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-trash-boundary.mjs",
+        "--runtime-root",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "--executable",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/codium",
+        "--application",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "--trial-root",
+        "/tmp/rea-3474-vscodium-20261016-chvz8trw",
+        "--inspector-hook-transport"
+      ],
+      "input_after_scope": {
+        "status": "present",
+        "bytes": 22177,
+        "sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2"
+      }
+    },
+    {
+      "label": "vscodium-private-state",
+      "meaning": "NOT_EXECUTED: memory admission refused. Later observed MemAvailable above12GiB before retry; no override.",
+      "trial": "/tmp/rea-3474-vscodium-20261016-qf9l_ihc",
+      "source_pins": {
+        "source": "9b7dc8e95ac77060e96f09ec4685d7a5b8465727",
+        "status": "",
+        "files": {
+          "scripts/electron-active-hook.cjs": "c18dd3a3fb374d75d0fe545ac425e86d177c11753c10c188ba844e81e4857fa6",
+          "scripts/electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1",
+          "experiments/analysis-efficiency/vscodium-trash-boundary.mjs": "655fb7d0f16973eaa2ca1f3519ba9fb17368209382d15e400022240dcc8fbf70",
+          "experiments/analysis-efficiency/electron-hook-identity.mjs": "c5d6f0c35f7b9451b4b260f9179440b9e5060b8008e10a8db4f61ae832cac862",
+          "dist/browser/PlaywrightElectronActiveProvider.js": "1a0efd2c365d48d5f7c533351e3ad1f230e1f76ed1a754ee49e488908f73dc1c",
+          "dist/browser/PlaywrightElectronActiveProjection.js": "9732f6422fff971b75a614225d4da69ca401552ce5a650308224ed897ce6f26c",
+          "dist/application/javascript/ElectronActiveObservationService.js": "438ad8c16239eb296ceef4ad3809377547bb4932c4c87df5d4ea3667c738bc6f"
+        }
+      },
+      "receipt": {
+        "status": "NOT_EXECUTED",
+        "log_sha256": "a71ad3bebd917758c9d24e4fc3519d9f6838f271824258dfec36a14fc466689e",
+        "reason": "Admission refused before execution; memory budget plus4GiB reserve unavailable."
+      },
+      "report": null,
+      "invocation": [
+        "/usr/bin/python3",
+        "/home/yann/yann/rea-codemode-tool-design/experiments/analysis-efficiency/resource-run.py",
+        "--memory-gib",
+        "8",
+        "--observe-payload-exit",
+        "--",
+        "env",
+        "PATH=/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin:/usr/bin:/bin",
+        "GOMAXPROCS=1",
+        "GOMEMLIMIT=3GiB",
+        "UV_THREADPOOL_SIZE=1",
+        "DEBUG=pw:browser",
+        "NODE_OPTIONS=--max-old-space-size=2048",
+        "TMPDIR=/tmp/rea-3474-vscodium-20261016-qf9l_ihc/tmp",
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1280x900x24 -nolisten tcp -ac",
+        "bwrap",
+        "--die-with-parent",
+        "--new-session",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev-bind",
+        "/dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-qf9l_ihc",
+        "/tmp/rea-3474-vscodium-20261016-qf9l_ihc",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-qf9l_ihc/config",
+        "/home/yann/.config",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-qf9l_ihc/local",
+        "/home/yann/.local",
+        "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-trash-boundary.mjs",
+        "--runtime-root",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "--executable",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/codium",
+        "--application",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "--trial-root",
+        "/tmp/rea-3474-vscodium-20261016-qf9l_ihc",
+        "--inspector-hook-transport"
+      ],
+      "input_after_scope": {
+        "status": "not-created"
+      }
+    },
+    {
+      "label": "vscodium-private-state-admitted",
+      "meaning": "Private state writable; main Inspector evaluation still failed. Do not infer a spontaneous app crash from subsequent test cleanup.",
+      "trial": "/tmp/rea-3474-vscodium-20261016-1cxmu55n",
+      "source_pins": {
+        "source": "9b7dc8e95ac77060e96f09ec4685d7a5b8465727",
+        "status": "",
+        "files": {
+          "scripts/electron-active-hook.cjs": "c18dd3a3fb374d75d0fe545ac425e86d177c11753c10c188ba844e81e4857fa6",
+          "scripts/electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1",
+          "experiments/analysis-efficiency/vscodium-trash-boundary.mjs": "655fb7d0f16973eaa2ca1f3519ba9fb17368209382d15e400022240dcc8fbf70",
+          "experiments/analysis-efficiency/electron-hook-identity.mjs": "c5d6f0c35f7b9451b4b260f9179440b9e5060b8008e10a8db4f61ae832cac862",
+          "dist/browser/PlaywrightElectronActiveProvider.js": "1a0efd2c365d48d5f7c533351e3ad1f230e1f76ed1a754ee49e488908f73dc1c",
+          "dist/browser/PlaywrightElectronActiveProjection.js": "9732f6422fff971b75a614225d4da69ca401552ce5a650308224ed897ce6f26c",
+          "dist/application/javascript/ElectronActiveObservationService.js": "438ad8c16239eb296ceef4ad3809377547bb4932c4c87df5d4ea3667c738bc6f"
+        }
+      },
+      "receipt": {
+        "log_sha256": "7d64d3818dd0164a7c44b9cb9ac0f0381a806d7a4173a832590ee40e27e1df2c",
+        "wall_seconds": 3.177,
+        "payload_exit_code": 1,
+        "payload_exit_cpu_usec": 2790950,
+        "payload_exit_peak_cgroup_bytes": 375185408,
+        "payload_resource_observation_verified": true,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-12a66c2a1dd2425b8304a47533fc73af.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      },
+      "report": {
+        "runtime": "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "staged_hook_sha256": {
+          "electron-active-hook.cjs": "c18dd3a3fb374d75d0fe545ac425e86d177c11753c10c188ba844e81e4857fa6",
+          "electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1"
+        },
+        "process_output_prefix_tails": {
+          "stdout": {
+            "observed_bytes": 0,
+            "tail": ""
+          },
+          "stderr": {
+            "observed_bytes": 0,
+            "tail": ""
+          }
+        },
+        "settings": {
+          "files.enableTrash": true,
+          "explorer.confirmDelete": false,
+          "workbench.startupEditor": "none",
+          "window.menuStyle": "custom",
+          "window.titleBarStyle": "custom",
+          "security.workspace.trust.enabled": false,
+          "update.mode": "none",
+          "telemetry.telemetryLevel": "off",
+          "extensions.autoCheckUpdates": false,
+          "extensions.autoUpdate": false
+        },
+        "elapsed_ms": 1351.414495,
+        "launch_transport": "explicit-inspector-hook-after-start",
+        "probe": null,
+        "provider_ok": false,
+        "deadline_triggered": false,
+        "error": {
+          "tag": "ProviderAdapterError",
+          "diagnostics": {
+            "message": "electronApplication.evaluate: Execution context was destroyed, most likely because of a navigation."
+          }
+        },
+        "workflow_status": "partial-or-failed"
+      },
+      "invocation": [
+        "/usr/bin/python3",
+        "/home/yann/yann/rea-codemode-tool-design/experiments/analysis-efficiency/resource-run.py",
+        "--memory-gib",
+        "8",
+        "--observe-payload-exit",
+        "--",
+        "env",
+        "PATH=/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin:/usr/bin:/bin",
+        "GOMAXPROCS=1",
+        "GOMEMLIMIT=3GiB",
+        "UV_THREADPOOL_SIZE=1",
+        "DEBUG=pw:browser",
+        "NODE_OPTIONS=--max-old-space-size=2048",
+        "TMPDIR=/tmp/rea-3474-vscodium-20261016-1cxmu55n/tmp",
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1280x900x24 -nolisten tcp -ac",
+        "bwrap",
+        "--die-with-parent",
+        "--new-session",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev-bind",
+        "/dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-1cxmu55n",
+        "/tmp/rea-3474-vscodium-20261016-1cxmu55n",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-1cxmu55n/config",
+        "/home/yann/.config",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-1cxmu55n/local",
+        "/home/yann/.local",
+        "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-trash-boundary.mjs",
+        "--runtime-root",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "--executable",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/codium",
+        "--application",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "--trial-root",
+        "/tmp/rea-3474-vscodium-20261016-1cxmu55n",
+        "--inspector-hook-transport"
+      ],
+      "input_after_scope": {
+        "status": "present",
+        "bytes": 22177,
+        "sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2"
+      }
+    },
+    {
+      "label": "vscodium-generic-private-state",
+      "meaning": "Full canonical hook throws External navigation is blocked during app startup. Requested URL not retained.",
+      "trial": "/tmp/rea-3474-vscodium-20261016-5buwpsll",
+      "source_pins": {
+        "source": "9b7dc8e95ac77060e96f09ec4685d7a5b8465727",
+        "status": "",
+        "files": {
+          "scripts/electron-active-hook.cjs": "c18dd3a3fb374d75d0fe545ac425e86d177c11753c10c188ba844e81e4857fa6",
+          "scripts/electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1",
+          "experiments/analysis-efficiency/vscodium-trash-boundary.mjs": "655fb7d0f16973eaa2ca1f3519ba9fb17368209382d15e400022240dcc8fbf70",
+          "experiments/analysis-efficiency/electron-hook-identity.mjs": "c5d6f0c35f7b9451b4b260f9179440b9e5060b8008e10a8db4f61ae832cac862",
+          "dist/browser/PlaywrightElectronActiveProvider.js": "1a0efd2c365d48d5f7c533351e3ad1f230e1f76ed1a754ee49e488908f73dc1c",
+          "dist/browser/PlaywrightElectronActiveProjection.js": "9732f6422fff971b75a614225d4da69ca401552ce5a650308224ed897ce6f26c",
+          "dist/application/javascript/ElectronActiveObservationService.js": "438ad8c16239eb296ceef4ad3809377547bb4932c4c87df5d4ea3667c738bc6f"
+        }
+      },
+      "receipt": {
+        "log_sha256": "7780f9525ac2aa9656a3100915814dd2368f6d5615c6b6fe0534c42575bf73e1",
+        "wall_seconds": 2.853,
+        "payload_exit_code": 1,
+        "payload_exit_cpu_usec": 2515248,
+        "payload_exit_peak_cgroup_bytes": 321961984,
+        "payload_resource_observation_verified": false,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-344c1ecf210a428785ef3ccad1dbc63d.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      },
+      "report": {
+        "runtime": "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "staged_hook_sha256": {
+          "electron-active-hook.cjs": "c18dd3a3fb374d75d0fe545ac425e86d177c11753c10c188ba844e81e4857fa6",
+          "electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1"
+        },
+        "engine": {
+          "node": "24.21.0",
+          "electron": "43.7.3",
+          "application_path": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app"
+        },
+        "process_output_prefix_tails": {
+          "stdout": {
+            "observed_bytes": 333,
+            "tail": "\u001b[90m[main 2026-10-16T23:09:00.118Z]\u001b[0m [node-compile-cache] main: packaged cache inactive (status: disabled, configured: /tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app/node-compile-cache/main, active: none)\n\u001b[90m[main 2026-10-16T23:09:00.180Z]\u001b[0m StorageMainService: creating application shared storage\n"
+          },
+          "stderr": {
+            "observed_bytes": 2451,
+            "tail": "Warning: 'remote-debugging-port' is not in the list of known options, but still passed to Electron/Chromium.\n[4096087:1016/230900.087019:ERROR:crypto/nss_util.cc:256] Error initializing NSS with a persistent database (sql:/home/yann/.pki/nssdb): NSS error code: -8126\n\n(electron:4096087): dconf-CRITICAL **: 23:09:00.203: unable to create file '/home/yann/.cache/dconf/user': Read-only file system.  dconf will not work properly.\n\n(electron:4096087): dconf-CRITICAL **: 23:09:00.204: unable to create file '/home/yann/.cache/dconf/user': Read-only file system.  dconf will not work properly.\n\n(electron:4096087): dconf-CRITICAL **: 23:09:00.214: unable to create file '/home/yann/.cache/dconf/user': Read-only file system.  dconf will not work properly.\n[4096087:1016/230900.304789:ERROR:dbus/bus.cc:406] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\nWaiting for the debugger to disconnect...\nDebugger ending on ws://127.0.0.1:40211/aad69616-f308-4675-b1c5-71e8ed639df2\nFor help, see: https://nodejs.org/learn/getting-started/debugging\n/home/yann/yann/rea-electron-trash-item-3474-20261016/scripts/electron-active-hook.cjs:984\n    throw cause;\n    ^\n\nError: External navigation is blocked\n    at WebContents.patchedNavigation [as loadURL] (/home/yann/yann/rea-electron-trash-item-3474-20261016/scripts/electron-active-hook.cjs:753:31)\n    at BrowserWindow.loadURL (node:electron/js2c/browser_init:2:20204)\n    at Ba.load (file:///tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app/out/mainImpl.js:97:71413)\n    at Zc.doOpenInBrowserWindow (file:///tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app/out/mainImpl.js:102:26311)\n    at async Zc.openInBrowserWindow (file:///tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app/out/mainImpl.js:102:25342)\n    at async Zc.doOpen (file:///tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app/out/mainImpl.js:102:9099)\n    at async Zc.open (file:///tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app/out/mainImpl.js:102:5501)\n    at async Js.startup (file:///tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app/out/mainImpl.js:158:14068)\n    at async hC.startup (file:///tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app/out/mainImpl.js:189:55791)\n\nNode.js v24.21.0\n"
+          }
+        },
+        "settings": {
+          "files.enableTrash": true,
+          "explorer.confirmDelete": false,
+          "workbench.startupEditor": "none",
+          "window.menuStyle": "custom",
+          "window.titleBarStyle": "custom",
+          "security.workspace.trust.enabled": false,
+          "update.mode": "none",
+          "telemetry.telemetryLevel": "off",
+          "extensions.autoCheckUpdates": false,
+          "extensions.autoUpdate": false
+        },
+        "elapsed_ms": 1789.142845,
+        "launch_transport": "standard-staged-argv",
+        "probe": null,
+        "provider_ok": false,
+        "deadline_triggered": false,
+        "error": {
+          "tag": "ProviderAdapterError",
+          "diagnostics": {
+            "message": "electronApplication.firstWindow: Target page, context or browser has been closed"
+          }
+        },
+        "workflow_status": "partial-or-failed"
+      },
+      "invocation": [
+        "/usr/bin/python3",
+        "/home/yann/yann/rea-codemode-tool-design/experiments/analysis-efficiency/resource-run.py",
+        "--memory-gib",
+        "8",
+        "--observe-payload-exit",
+        "--",
+        "env",
+        "PATH=/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin:/usr/bin:/bin",
+        "GOMAXPROCS=1",
+        "GOMEMLIMIT=3GiB",
+        "UV_THREADPOOL_SIZE=1",
+        "DEBUG=pw:browser",
+        "NODE_OPTIONS=--max-old-space-size=2048",
+        "TMPDIR=/tmp/rea-3474-vscodium-20261016-5buwpsll/tmp",
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1280x900x24 -nolisten tcp -ac",
+        "bwrap",
+        "--die-with-parent",
+        "--new-session",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev-bind",
+        "/dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-5buwpsll",
+        "/tmp/rea-3474-vscodium-20261016-5buwpsll",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-5buwpsll/config",
+        "/home/yann/.config",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-5buwpsll/local",
+        "/home/yann/.local",
+        "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-trash-boundary.mjs",
+        "--runtime-root",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "--executable",
+        "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+        "--application",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "--trial-root",
+        "/tmp/rea-3474-vscodium-20261016-5buwpsll"
+      ],
+      "input_after_scope": {
+        "status": "present",
+        "bytes": 22177,
+        "sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2"
+      }
+    },
+    {
+      "label": "vscodium-producer-first",
+      "meaning": "Initial producer verifier still used unstable main Inspector evaluation.",
+      "trial": "/tmp/rea-3474-vscodium-20261016-tff71dre",
+      "source_pins": {
+        "source": "a0474591be21efef4ad9cb3fed48d369cff6fb7b",
+        "status": "",
+        "files": {
+          "scripts/electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1",
+          "experiments/analysis-efficiency/vscodium-shell-producer.mjs": "5047772b829f2bb6574711eeb407ae652a4603e30197412d2a73bd7f2ed23c33",
+          "README.md": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2",
+          "dist/browser/PlaywrightElectronActiveProvider.js": "1a0efd2c365d48d5f7c533351e3ad1f230e1f76ed1a754ee49e488908f73dc1c"
+        }
+      },
+      "receipt": {
+        "log_sha256": "f4b6f9a0c468e6458eb8a40180a6fc8420b4f96a18251df04f51d170f1379415",
+        "wall_seconds": 1.662,
+        "payload_exit_code": 1,
+        "payload_exit_cpu_usec": 1491119,
+        "payload_exit_peak_cgroup_bytes": 223240192,
+        "payload_resource_observation_verified": false,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-a751a7d41f814c8ba7b215147bc581a6.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      },
+      "report": {
+        "scope": "production-shell-boundary-with-test-recorder",
+        "runtime": "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "executable": "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+        "application": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "boundary_sha256": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1",
+        "settings": {
+          "files.enableTrash": true,
+          "explorer.confirmDelete": false,
+          "workbench.startupEditor": "none",
+          "window.menuStyle": "custom",
+          "window.titleBarStyle": "custom",
+          "security.workspace.trust.enabled": false,
+          "update.mode": "none",
+          "telemetry.telemetryLevel": "off",
+          "extensions.autoCheckUpdates": false,
+          "extensions.autoUpdate": false
+        },
+        "elapsed_ms": 721.854552,
+        "probe": null,
+        "failure": "Error: electronApplication.evaluate: Execution context was destroyed, most likely because of a navigation.",
+        "close_status": "api-completed",
+        "scenario_ok": false,
+        "full_hook_provider_workflow": "NOT_EXECUTED"
+      },
+      "invocation": [
+        "/usr/bin/python3",
+        "/home/yann/yann/rea-codemode-tool-design/experiments/analysis-efficiency/resource-run.py",
+        "--memory-gib",
+        "8",
+        "--observe-payload-exit",
+        "--",
+        "env",
+        "PATH=/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin:/usr/bin:/bin",
+        "GOMAXPROCS=1",
+        "GOMEMLIMIT=3GiB",
+        "UV_THREADPOOL_SIZE=1",
+        "DEBUG=pw:browser",
+        "NODE_OPTIONS=--max-old-space-size=2048",
+        "TMPDIR=/tmp/rea-3474-vscodium-20261016-tff71dre/tmp",
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1280x900x24 -nolisten tcp -ac",
+        "bwrap",
+        "--die-with-parent",
+        "--new-session",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev-bind",
+        "/dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-tff71dre",
+        "/tmp/rea-3474-vscodium-20261016-tff71dre",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-tff71dre/config",
+        "/home/yann/.config",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-tff71dre/local",
+        "/home/yann/.local",
+        "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-shell-producer.mjs",
+        "--runtime-root",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "--executable",
+        "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+        "--application",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "--trial-root",
+        "/tmp/rea-3474-vscodium-20261016-tff71dre"
+      ],
+      "input_after_scope": {
+        "status": "present",
+        "bytes": 22177,
+        "sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2"
+      }
+    },
+    {
+      "label": "vscodium-file-observer",
+      "meaning": "Real workspace/context menu reached, but Delete includes Del shortcut; no delete command executed.",
+      "trial": "/tmp/rea-3474-vscodium-20261016-p6yrd9hb",
+      "source_pins": {
+        "source": "ccce5dbd0d7644f4fcc707bd2f05fe9295aa1f6d",
+        "status": "",
+        "files": {
+          "scripts/electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1",
+          "experiments/analysis-efficiency/vscodium-shell-producer.mjs": "12ebadaa98cf8e7c02aa76ec76b91c3c0f8a5589a2673f1f621c21f1ebc0b5dd",
+          "README.md": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2",
+          "dist/browser/PlaywrightElectronActiveProvider.js": "1a0efd2c365d48d5f7c533351e3ad1f230e1f76ed1a754ee49e488908f73dc1c"
+        }
+      },
+      "receipt": {
+        "log_sha256": "000cd0e3838fb7f770f00b5d3ccc6a3465569690b9ec7ebc54511b886db4ae97",
+        "wall_seconds": 15.758,
+        "payload_exit_code": 1,
+        "payload_exit_cpu_usec": 15433764,
+        "payload_exit_peak_cgroup_bytes": 1145204736,
+        "payload_resource_observation_verified": false,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-726c823672ef4f2b9aaa80992c6505f9.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      },
+      "report": {
+        "scope": "production-shell-boundary-with-test-recorder",
+        "runtime": "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "executable": "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+        "application": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "boundary_sha256": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1",
+        "engine": {
+          "node": "24.21.0",
+          "electron": "43.7.3",
+          "application_path": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+          "full_hook_installed": false
+        },
+        "settings": {
+          "files.enableTrash": true,
+          "explorer.confirmDelete": false,
+          "workbench.startupEditor": "none",
+          "window.menuStyle": "custom",
+          "window.titleBarStyle": "custom",
+          "security.workspace.trust.enabled": false,
+          "update.mode": "none",
+          "telemetry.telemetryLevel": "off",
+          "extensions.autoCheckUpdates": false,
+          "extensions.autoUpdate": false
+        },
+        "elapsed_ms": 14789.436251,
+        "probe": null,
+        "failure": "TimeoutError: locator.click: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('menuitem', { name: 'Delete', exact: true })\u001b[22m\n",
+        "close_status": "window-close-completed",
+        "scenario_ok": false,
+        "full_hook_provider_workflow": "NOT_EXECUTED"
+      },
+      "invocation": [
+        "/usr/bin/python3",
+        "/home/yann/yann/rea-codemode-tool-design/experiments/analysis-efficiency/resource-run.py",
+        "--memory-gib",
+        "8",
+        "--observe-payload-exit",
+        "--",
+        "env",
+        "PATH=/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin:/usr/bin:/bin",
+        "GOMAXPROCS=1",
+        "GOMEMLIMIT=3GiB",
+        "UV_THREADPOOL_SIZE=1",
+        "DEBUG=pw:browser",
+        "NODE_OPTIONS=--max-old-space-size=2048",
+        "TMPDIR=/tmp/rea-3474-vscodium-20261016-p6yrd9hb/tmp",
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1280x900x24 -nolisten tcp -ac",
+        "bwrap",
+        "--die-with-parent",
+        "--new-session",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev-bind",
+        "/dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-p6yrd9hb",
+        "/tmp/rea-3474-vscodium-20261016-p6yrd9hb",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-p6yrd9hb/config",
+        "/home/yann/.config",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-p6yrd9hb/local",
+        "/home/yann/.local",
+        "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-shell-producer.mjs",
+        "--runtime-root",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "--executable",
+        "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+        "--application",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "--trial-root",
+        "/tmp/rea-3474-vscodium-20261016-p6yrd9hb"
+      ],
+      "input_after_scope": {
+        "status": "present",
+        "bytes": 22177,
+        "sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2"
+      }
+    },
+    {
+      "label": "vscodium-producer-green",
+      "meaning": "Initial real UI success without native-call tracer; separate earlier source/measurement cohort.",
+      "trial": "/tmp/rea-3474-vscodium-20261016-hvpnhxc9",
+      "source_pins": {
+        "source": "954e84e9f0f8e59864e6bac54db5dc7c46889425",
+        "status": "",
+        "files": {
+          "scripts/electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1",
+          "experiments/analysis-efficiency/vscodium-shell-producer.mjs": "2b898c40e35dbd12adefedc8496889eb74a54ec105b54c71a3d7179f3cb5ed7f",
+          "README.md": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2",
+          "dist/browser/PlaywrightElectronActiveProvider.js": "1a0efd2c365d48d5f7c533351e3ad1f230e1f76ed1a754ee49e488908f73dc1c"
+        }
+      },
+      "receipt": {
+        "log_sha256": "3c379510d2493c4f44115696c2d7220bd7b17a7a8e917b8abbac40d38a302a92",
+        "wall_seconds": 14.32,
+        "payload_exit_code": 0,
+        "payload_exit_cpu_usec": 14042110,
+        "payload_exit_peak_cgroup_bytes": 1084530688,
+        "payload_resource_observation_verified": true,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-676e7029075d44de8f6a84bbc8b265a5.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      },
+      "report": {
+        "scope": "production-shell-boundary-with-test-recorder",
+        "runtime": "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "executable": "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+        "application": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "boundary_sha256": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1",
+        "engine": {
+          "node": "24.21.0",
+          "electron": "43.7.3",
+          "application_path": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+          "full_hook_installed": false
+        },
+        "settings": {
+          "files.enableTrash": true,
+          "explorer.confirmDelete": false,
+          "workbench.startupEditor": "none",
+          "window.menuStyle": "custom",
+          "window.titleBarStyle": "custom",
+          "security.workspace.trust.enabled": false,
+          "update.mode": "none",
+          "telemetry.telemetryLevel": "off",
+          "extensions.autoCheckUpdates": false,
+          "extensions.autoUpdate": false
+        },
+        "elapsed_ms": 13343.15036,
+        "probe": {
+          "input_path": "/tmp/rea-3474-vscodium-20261016-hvpnhxc9/workspace/README-copy.md",
+          "input_sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2",
+          "input_bytes": 22177,
+          "before_trash_count": 0,
+          "file_unchanged": true,
+          "observation": {
+            "engine": {
+              "node": "24.21.0",
+              "electron": "43.7.3",
+              "application_path": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+              "full_hook_installed": false
+            },
+            "events": [
+              {
+                "kind": "shell-attempt",
+                "event": "trashItem",
+                "phase": "blocked",
+                "error": true,
+                "argument_count": 1,
+                "matches_owned_path": true
+              }
+            ],
+            "dropped": 0
+          },
+          "page_errors": []
+        },
+        "failure": null,
+        "close_status": "window-close-completed",
+        "scenario_ok": true,
+        "full_hook_provider_workflow": "NOT_EXECUTED"
+      },
+      "invocation": [
+        "/usr/bin/python3",
+        "/home/yann/yann/rea-codemode-tool-design/experiments/analysis-efficiency/resource-run.py",
+        "--memory-gib",
+        "8",
+        "--observe-payload-exit",
+        "--",
+        "env",
+        "PATH=/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin:/usr/bin:/bin",
+        "GOMAXPROCS=1",
+        "GOMEMLIMIT=3GiB",
+        "UV_THREADPOOL_SIZE=1",
+        "DEBUG=pw:browser",
+        "NODE_OPTIONS=--max-old-space-size=2048",
+        "TMPDIR=/tmp/rea-3474-vscodium-20261016-hvpnhxc9/tmp",
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1280x900x24 -nolisten tcp -ac",
+        "bwrap",
+        "--die-with-parent",
+        "--new-session",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev-bind",
+        "/dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-hvpnhxc9",
+        "/tmp/rea-3474-vscodium-20261016-hvpnhxc9",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-hvpnhxc9/config",
+        "/home/yann/.config",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-hvpnhxc9/local",
+        "/home/yann/.local",
+        "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-shell-producer.mjs",
+        "--runtime-root",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "--executable",
+        "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+        "--application",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "--trial-root",
+        "/tmp/rea-3474-vscodium-20261016-hvpnhxc9"
+      ],
+      "input_after_scope": {
+        "status": "present",
+        "bytes": 22177,
+        "sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2"
+      }
+    },
+    {
+      "label": "vscodium-baseline",
+      "meaning": "Earlier baseline: no blocked event; native OS completion not established.",
+      "trial": "/tmp/rea-3474-vscodium-20261016-1fo_ocor",
+      "source_pins": {
+        "verifier_source": "4d62d399319264bf0b831e61d6e0ba5c30db5893",
+        "runtime_source": "360626434d21d19dc9402196630f48a249c25245",
+        "status": "",
+        "files": {
+          "scripts/electron-active-hook-boundaries.cjs": "dae5ac52856a30566ec027cb15ddd46c2920c8defdec11512b6c1f189314d45c",
+          "experiments/analysis-efficiency/vscodium-shell-producer.mjs": "2b898c40e35dbd12adefedc8496889eb74a54ec105b54c71a3d7179f3cb5ed7f",
+          "README.md": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2",
+          "dist/browser/PlaywrightElectronActiveProvider.js": "1a0efd2c365d48d5f7c533351e3ad1f230e1f76ed1a754ee49e488908f73dc1c"
+        },
+        "baseline_boundary_matches_fresh_main_d5be402f": true
+      },
+      "receipt": {
+        "log_sha256": "bde0f26f605fe242ab7abcb9b01afc9ec2fcb77f74af43e2f5ec5b875de0428f",
+        "wall_seconds": 16.506,
+        "payload_exit_code": 1,
+        "payload_exit_cpu_usec": 16129829,
+        "payload_exit_peak_cgroup_bytes": 1170067456,
+        "payload_resource_observation_verified": false,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-cf53308121a8443f837a8e58e96dd9a4.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      },
+      "report": {
+        "scope": "production-shell-boundary-with-test-recorder",
+        "runtime": "/home/yann/yann/rea-electron-cancellation-main-control-20261016",
+        "executable": "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+        "application": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "boundary_sha256": "dae5ac52856a30566ec027cb15ddd46c2920c8defdec11512b6c1f189314d45c",
+        "engine": {
+          "node": "24.21.0",
+          "electron": "43.7.3",
+          "application_path": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+          "full_hook_installed": false
+        },
+        "settings": {
+          "files.enableTrash": true,
+          "explorer.confirmDelete": false,
+          "workbench.startupEditor": "none",
+          "window.menuStyle": "custom",
+          "window.titleBarStyle": "custom",
+          "security.workspace.trust.enabled": false,
+          "update.mode": "none",
+          "telemetry.telemetryLevel": "off",
+          "extensions.autoCheckUpdates": false,
+          "extensions.autoUpdate": false
+        },
+        "elapsed_ms": 15494.325653,
+        "probe": null,
+        "failure": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    dropped: 0,\n    engine: {\n      application_path: '/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app',\n      electron: '43.7.3',\n...\n    },\n+   events: []\n-   events: [\n-     {\n-       argument_count: 1,\n-       error: true,\n-       event: 'trashItem',\n-       kind: 'shell-attempt',\n-       matches_owned_path: true,\n-       phase: 'blocked'\n-     }\n-   ]\n  }\n",
+        "close_status": "window-close-completed",
+        "scenario_ok": false,
+        "full_hook_provider_workflow": "NOT_EXECUTED"
+      },
+      "invocation": [
+        "/usr/bin/python3",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/resource-run.py",
+        "--memory-gib",
+        "8",
+        "--observe-payload-exit",
+        "--",
+        "env",
+        "PATH=/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin:/usr/bin:/bin",
+        "GOMAXPROCS=1",
+        "GOMEMLIMIT=3GiB",
+        "UV_THREADPOOL_SIZE=1",
+        "DEBUG=pw:browser",
+        "NODE_OPTIONS=--max-old-space-size=2048",
+        "TMPDIR=/tmp/rea-3474-vscodium-20261016-1fo_ocor/tmp",
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1280x900x24 -nolisten tcp -ac",
+        "bwrap",
+        "--die-with-parent",
+        "--new-session",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev-bind",
+        "/dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-1fo_ocor",
+        "/tmp/rea-3474-vscodium-20261016-1fo_ocor",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-1fo_ocor/config",
+        "/home/yann/.config",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-1fo_ocor/local",
+        "/home/yann/.local",
+        "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-shell-producer.mjs",
+        "--runtime-root",
+        "/home/yann/yann/rea-electron-cancellation-main-control-20261016",
+        "--executable",
+        "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+        "--application",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "--trial-root",
+        "/tmp/rea-3474-vscodium-20261016-1fo_ocor"
+      ],
+      "input_after_scope": {
+        "status": "present",
+        "bytes": 22177,
+        "sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2"
+      }
+    },
+    {
+      "label": "vscodium-paired-baseline",
+      "meaning": "Native invocation1 and no blocked event observed; expected oracle failure plus Xvfb temporary-directory cleanup exit5. Orchestrator incorrectly required exit1 and stopped.",
+      "trial": "/tmp/rea-3474-vscodium-20261016-e8b0ctbn",
+      "source_pins": {
+        "verifier_source": "85bcf1f621b4437aace14e3a74e6f213ee708d7a",
+        "runtime_source": "360626434d21d19dc9402196630f48a249c25245",
+        "status": "",
+        "files": {
+          "scripts/electron-active-hook-boundaries.cjs": "dae5ac52856a30566ec027cb15ddd46c2920c8defdec11512b6c1f189314d45c",
+          "experiments/analysis-efficiency/vscodium-shell-producer.mjs": "69a3968d7e796437158a3de6f0419a39fe2b6d6a436c0ecab4ea1b812d6e18ed",
+          "README.md": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2",
+          "dist/browser/PlaywrightElectronActiveProvider.js": "1a0efd2c365d48d5f7c533351e3ad1f230e1f76ed1a754ee49e488908f73dc1c"
+        },
+        "baseline_boundary_matches_fresh_main_d5be402f": true
+      },
+      "receipt": {
+        "log_sha256": "68c5ca7b4dac171f3902695b484717995f659883246043dc4bb8f2778a0110fc",
+        "wall_seconds": 16.187,
+        "payload_exit_code": 5,
+        "payload_exit_cpu_usec": 15888602,
+        "payload_exit_peak_cgroup_bytes": 1181683712,
+        "payload_resource_observation_verified": false,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-0ff74249d0de4ebfab754ef7e0819204.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      },
+      "report": {
+        "scope": "production-shell-boundary-with-test-recorder",
+        "runtime": "/home/yann/yann/rea-electron-cancellation-main-control-20261016",
+        "executable": "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+        "application": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "boundary_sha256": "dae5ac52856a30566ec027cb15ddd46c2920c8defdec11512b6c1f189314d45c",
+        "engine": {
+          "node": "24.21.0",
+          "electron": "43.7.3",
+          "application_path": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+          "full_hook_installed": false
+        },
+        "settings": {
+          "files.enableTrash": true,
+          "explorer.confirmDelete": false,
+          "workbench.startupEditor": "none",
+          "window.menuStyle": "custom",
+          "window.titleBarStyle": "custom",
+          "security.workspace.trust.enabled": false,
+          "update.mode": "none",
+          "telemetry.telemetryLevel": "off",
+          "extensions.autoCheckUpdates": false,
+          "extensions.autoUpdate": false
+        },
+        "elapsed_ms": 15224.695683000002,
+        "probe": null,
+        "observation": {
+          "engine": {
+            "node": "24.21.0",
+            "electron": "43.7.3",
+            "application_path": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+            "full_hook_installed": false
+          },
+          "events": [],
+          "dropped": 0,
+          "native_calls": {
+            "total": 1,
+            "matching_owned_path": 1
+          }
+        },
+        "failure": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n... Skipped lines\n\n  {\n    dropped: 0,\n    engine: {\n      application_path: '/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app',\n      electron: '43.7.3',\n...\n    },\n+   events: [],\n-   events: [\n-     {\n-       argument_count: 1,\n-       error: true,\n-       event: 'trashItem',\n-       kind: 'shell-attempt',\n-       matches_owned_path: true,\n-       phase: 'blocked'\n-     }\n-   ],\n    native_calls: {\n+     matching_owned_path: 1,\n+     total: 1\n-     matching_owned_path: 0,\n-     total: 0\n    }\n  }\n",
+        "close_status": "window-close-completed",
+        "scenario_ok": false,
+        "full_hook_provider_workflow": "NOT_EXECUTED"
+      },
+      "invocation": [
+        "/usr/bin/python3",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/resource-run.py",
+        "--memory-gib",
+        "8",
+        "--observe-payload-exit",
+        "--",
+        "env",
+        "PATH=/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin:/usr/bin:/bin",
+        "GOMAXPROCS=1",
+        "GOMEMLIMIT=3GiB",
+        "UV_THREADPOOL_SIZE=1",
+        "DEBUG=pw:browser",
+        "NODE_OPTIONS=--max-old-space-size=2048",
+        "TMPDIR=/tmp/rea-3474-vscodium-20261016-e8b0ctbn/tmp",
+        "xvfb-run",
+        "-a",
+        "--server-args=-screen 0 1280x900x24 -nolisten tcp -ac",
+        "bwrap",
+        "--die-with-parent",
+        "--new-session",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev-bind",
+        "/dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-e8b0ctbn",
+        "/tmp/rea-3474-vscodium-20261016-e8b0ctbn",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-e8b0ctbn/config",
+        "/home/yann/.config",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-e8b0ctbn/local",
+        "/home/yann/.local",
+        "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-shell-producer.mjs",
+        "--runtime-root",
+        "/home/yann/yann/rea-electron-cancellation-main-control-20261016",
+        "--executable",
+        "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+        "--application",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "--trial-root",
+        "/tmp/rea-3474-vscodium-20261016-e8b0ctbn"
+      ],
+      "input_after_scope": {
+        "status": "present",
+        "bytes": 22177,
+        "sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2"
+      }
+    },
+    {
+      "label": "vscodium-native-tracer-candidate",
+      "meaning": "Earlier native-tracer candidate: native0/blocked1, separate measurement cohort.",
+      "trial": "/tmp/rea-3474-vscodium-20261016-n26lc0ld",
+      "source_pins": {
+        "verifier_source": "85bcf1f621b4437aace14e3a74e6f213ee708d7a",
+        "runtime_source": "85bcf1f621b4437aace14e3a74e6f213ee708d7a",
+        "status": "",
+        "files": {
+          "scripts/electron-active-hook-boundaries.cjs": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1",
+          "experiments/analysis-efficiency/vscodium-shell-producer.mjs": "69a3968d7e796437158a3de6f0419a39fe2b6d6a436c0ecab4ea1b812d6e18ed",
+          "README.md": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2",
+          "dist/browser/PlaywrightElectronActiveProvider.js": "1a0efd2c365d48d5f7c533351e3ad1f230e1f76ed1a754ee49e488908f73dc1c"
+        }
+      },
+      "receipt": {
+        "log_sha256": "02995fa7d0e548b1557bbb31abd79467f5d7c69cf8bc546916c7a07310a3a4fb",
+        "wall_seconds": 14.603,
+        "payload_exit_code": 0,
+        "payload_exit_cpu_usec": 14275060,
+        "payload_exit_peak_cgroup_bytes": 1048383488,
+        "payload_resource_observation_verified": false,
+        "abort": null,
+        "hard_memory_bytes": 8589934592,
+        "early_stop_bytes": 6442450944,
+        "cpu_affinity": [10],
+        "cpu_quota_percent": 100,
+        "task_ceiling": 192,
+        "memory_events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0
+        },
+        "scope": "rea-efficiency-5a32ffacb1144338b2963250da08a930.scope",
+        "scope_poststate": "ActiveState=inactive\nSubState=dead",
+        "observer_sources_sha256": {
+          "resource-run.py": "7728862171415e7dee2c11af2ead2b9a54265fccaf82a7113956d36b29065e33",
+          "resource_payload.py": "6f089e645459eba80c5d73e39c21606c78173a44daf49fabc3b88c4631ce51c6"
+        }
+      },
+      "report": {
+        "scope": "production-shell-boundary-with-test-recorder",
+        "runtime": "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "executable": "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+        "application": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "boundary_sha256": "4cf28dc12bf559b6d8f921f27eb33eb55b74f08a3a7904c9092e0d477810bdf1",
+        "engine": {
+          "node": "24.21.0",
+          "electron": "43.7.3",
+          "application_path": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+          "full_hook_installed": false
+        },
+        "settings": {
+          "files.enableTrash": true,
+          "explorer.confirmDelete": false,
+          "workbench.startupEditor": "none",
+          "window.menuStyle": "custom",
+          "window.titleBarStyle": "custom",
+          "security.workspace.trust.enabled": false,
+          "update.mode": "none",
+          "telemetry.telemetryLevel": "off",
+          "extensions.autoCheckUpdates": false,
+          "extensions.autoUpdate": false
+        },
+        "elapsed_ms": 13611.491511999999,
+        "probe": {
+          "input_path": "/tmp/rea-3474-vscodium-20261016-n26lc0ld/workspace/README-copy.md",
+          "input_sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2",
+          "input_bytes": 22177,
+          "before_trash_count": 0,
+          "file_unchanged": true,
+          "observation": {
+            "engine": {
+              "node": "24.21.0",
+              "electron": "43.7.3",
+              "application_path": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+              "full_hook_installed": false
+            },
+            "events": [
+              {
+                "kind": "shell-attempt",
+                "event": "trashItem",
+                "phase": "blocked",
+                "error": true,
+                "argument_count": 1,
+                "matches_owned_path": true
+              }
+            ],
+            "dropped": 0,
+            "native_calls": {
+              "total": 0,
+              "matching_owned_path": 0
+            }
+          },
+          "page_errors": []
+        },
+        "observation": {
+          "engine": {
+            "node": "24.21.0",
+            "electron": "43.7.3",
+            "application_path": "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+            "full_hook_installed": false
+          },
+          "events": [
+            {
+              "kind": "shell-attempt",
+              "event": "trashItem",
+              "phase": "blocked",
+              "error": true,
+              "argument_count": 1,
+              "matches_owned_path": true
+            }
+          ],
+          "dropped": 0,
+          "native_calls": {
+            "total": 0,
+            "matching_owned_path": 0
+          }
+        },
+        "failure": null,
+        "close_status": "window-close-completed",
+        "scenario_ok": true,
+        "full_hook_provider_workflow": "NOT_EXECUTED"
+      },
+      "invocation": [
+        "/usr/bin/python3",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/resource-run.py",
+        "--memory-gib",
+        "8",
+        "--observe-payload-exit",
+        "--",
+        "env",
+        "PATH=/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin:/usr/bin:/bin",
+        "GOMAXPROCS=1",
+        "GOMEMLIMIT=3GiB",
+        "UV_THREADPOOL_SIZE=1",
+        "DEBUG=pw:browser",
+        "NODE_OPTIONS=--max-old-space-size=2048",
+        "TMPDIR=/tmp/rea-3474-vscodium-20261016-n26lc0ld/tmp",
+        "xvfb-run",
+        "-a",
+        "-f",
+        "/tmp/rea-3474-vscodium-20261016-n26lc0ld/Xauthority",
+        "--server-args=-screen 0 1280x900x24 -nolisten tcp -ac",
+        "bwrap",
+        "--die-with-parent",
+        "--new-session",
+        "--ro-bind",
+        "/",
+        "/",
+        "--dev-bind",
+        "/dev",
+        "/dev",
+        "--proc",
+        "/proc",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-n26lc0ld",
+        "/tmp/rea-3474-vscodium-20261016-n26lc0ld",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-n26lc0ld/config",
+        "/home/yann/.config",
+        "--bind",
+        "/tmp/rea-3474-vscodium-20261016-n26lc0ld/local",
+        "/home/yann/.local",
+        "/home/yann/.cache/rea-2459/node-v24.18.0-linux-x64/bin/node",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016/experiments/analysis-efficiency/vscodium-shell-producer.mjs",
+        "--runtime-root",
+        "/home/yann/yann/rea-electron-trash-item-3474-20261016",
+        "--executable",
+        "/tmp/rea-3474-electron43-20261016-b4m_cflm/runtime/electron",
+        "--application",
+        "/tmp/rea-vscodium-1.140.06880-20261016-szlc2mf_/application/resources/app",
+        "--trial-root",
+        "/tmp/rea-3474-vscodium-20261016-n26lc0ld"
+      ],
+      "input_after_scope": {
+        "status": "present",
+        "bytes": 22177,
+        "sha256": "6856a965e4b6cc3ca7b4211c7cfa63fc59e6aa638b30bdb38c46a5eb3e4cfdb2"
+      }
+    }
+  ],
+  "limits": [
+    "Full CLI/MCP/provider workflow NOT_EXECUTED in accepted producer cases; product Evidence schema/retention checked separately in88controlled tests.",
+    "Standard preload, main Inspector handle and full-hook navigation failures remain separate; no production startup, navigation or cleanup change is included. Raw-wrapper mutation4513 remains unfixed.",
+    "Fresh private profiles/workspaces; filesystem/toolchain caches warm. Cold/warm repeats and agent/billed tokens/context/schema/extra-call costs unmeasured. No speed/token benefit claim.",
+    "Resource counters at payload exit while observer lives, not final scope counters. Peak includes file cache. False verification flag means complete-family observation unverified; those values are observed prefixes. Driver wall includes source hashing/preparation but acquisition/agent costs unmeasured.",
+    "Old source commits, receipts and failed attempts retain their original cohorts. Regenerable applications, runtimes, profiles, screenshots and large raw logs excluded from Git.",
+    "Linux only. Real Windows/macOS providers and full check:pr not executed."
+  ]
+}

@@ -136,7 +136,8 @@ Blocked synchronous shell APIs keep their return contracts:
 `showItemInFolder` returns `undefined` and `writeShortcutLink` returns `false`.
 Their `shell-attempt` events record the blocked phase and argument shapes;
 neither result means the requested host operation occurred. The existing
-`openExternal` and `openPath` blocks continue to reject their promises.
+`openExternal`, `openPath` and `trashItem` blocks reject their promises without
+performing the host operation.
 CLI SIGINT/SIGTERM requests cancellation and awaits owned-process cleanup.
 Window IDs, URLs, and cached titles come from one main-process Electron snapshot,
 so a crashed renderer does not require a successful renderer-side title query.
