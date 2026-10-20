@@ -26,6 +26,35 @@ const firstText = (result: {
   return undefined;
 };
 
+const expectFittingSdkValidationRecovery = (result: {
+  readonly isError?: boolean | undefined;
+  readonly content: readonly {
+    readonly type: string;
+    readonly text?: string;
+  }[];
+}): void => {
+  expect(result.isError).toBe(true);
+  expect(JSON.parse(firstText(result) ?? "null")).toMatchObject({
+    error: {
+      code: "invalid_request",
+      recovery: {
+        kind: "inspect_input_contract",
+        operation: "procedure_pseudo_code",
+      },
+      details: {
+        operation: "procedure_pseudo_code",
+        issues: [
+          {
+            path: [],
+            reason: "invalid_value",
+            message: expect.stringContaining("required"),
+          },
+        ],
+      },
+    },
+  });
+};
+
 describe("MCP request bookkeeping", () => {
   it("releases list, tool, and completion state when cancellation arrives", () => {
     const completion = new AbortController();
@@ -101,8 +130,13 @@ describe("SDK validation error delivery", () => {
           name: "procedure_pseudo_code",
           arguments: { unexpected: true },
         });
-        expect(fitting.isError).toBe(true);
-        expect(firstText(fitting)).toContain("Input validation error");
+        expectFittingSdkValidationRecovery(fitting);
+
+        await expect(
+          client.callTool({ name: "missing_tool", arguments: {} }),
+        ).rejects.toThrow(
+          "Call tools/list, select an advertised tool, and retry",
+        );
 
         const oversized = await client.callTool({
           name: "procedure_pseudo_code",
@@ -156,7 +190,12 @@ describe("SDK validation error delivery", () => {
           arguments: { required: "present", [quotedKey]: true },
         });
         expect(quoted.isError).toBe(true);
-        expect(firstText(quoted)).toContain("Input validation error");
+        expect(JSON.parse(firstText(quoted) ?? "null")).toMatchObject({
+          error: {
+            code: "invalid_request",
+            recovery: { kind: "inspect_input_contract" },
+          },
+        });
         expect(Buffer.byteLength(JSON.stringify(quoted))).toBeLessThan(4096);
         expect(records.exportEvidenceBundle().records).toHaveLength(1);
 

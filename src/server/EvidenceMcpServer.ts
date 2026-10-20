@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 import {
   isCallToolResult,
+  isJSONRPCErrorResponse,
   isJSONRPCRequest,
   isJSONRPCNotification,
   isJSONRPCResultResponse,
@@ -27,7 +28,10 @@ import {
 import { CATALOG_IDENTITY, createCatalogIdentity } from "../catalogIdentity.js";
 import { transformAdvertisedInputJsonSchema } from "../contracts/toolSchemaMetadata.js";
 import type { EvidenceWriter } from "../application/investigation/InvestigationRecordPort.js";
-import { AnalysisResourceConstraintError } from "../domain/analysisErrorCore.js";
+import {
+  AnalysisInputError,
+  AnalysisResourceConstraintError,
+} from "../domain/analysisErrorCore.js";
 import { projectAnalysisError } from "../domain/analysisErrorProjection.js";
 import { createEvidence } from "../domain/evidence.js";
 import { jsonObjectSchema } from "../domain/jsonValue.js";
@@ -64,6 +68,28 @@ const hasAdvertisedInputJsonSchema = (value: unknown): boolean => {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
+
+const SDK_INPUT_VALIDATION_MAX_CHARS = 4_096;
+const SDK_INPUT_VALIDATION_PREVIEW_CHARS = 128;
+
+/** Return only ordinary, bounded SDK argument diagnostics for normalization. */
+const sdkInputValidationDiagnostic = (
+  text: string | undefined,
+  tool: string | undefined,
+): string | undefined => {
+  if (text === undefined || tool === undefined) return undefined;
+  const prefix = `Input validation error: Invalid arguments for tool ${tool}`;
+  if (!text.startsWith(prefix) || text[prefix.length] !== ":") return undefined;
+  const diagnostic = text.slice(prefix.length + 1).trimStart();
+  if (
+    diagnostic.length === 0 ||
+    diagnostic.length > SDK_INPUT_VALIDATION_MAX_CHARS
+  )
+    return undefined;
+  return diagnostic.length <= SDK_INPUT_VALIDATION_PREVIEW_CHARS
+    ? diagnostic
+    : `${diagnostic.slice(0, SDK_INPUT_VALIDATION_PREVIEW_CHARS)}… [SDK diagnostic truncated; inspect the advertised inputSchema for complete field details]`;
+};
 
 /** Remove only client-facing output schemas; SDK registrations stay canonical. */
 const omitOutputSchemasFromToolsList = (
@@ -305,7 +331,7 @@ class ErrorEvidenceTransport implements Transport {
       id !== undefined &&
       this.pendingToolLists.has(id);
     try {
-      const recovered = this.recoverError(message, tool);
+      const recovered = this.recoverProtocolError(message, tool);
       const advertised = omitToolSchemas
         ? omitOutputSchemasFromToolsList(recovered, id)
         : recovered;
@@ -377,6 +403,23 @@ class ErrorEvidenceTransport implements Transport {
             },
           }
         : message.result;
+    const sdkDiagnostic = !isStructured
+      ? message.result.content.find((item) => item.type === "text")?.text
+      : undefined;
+    const normalized = this.normalizeSdkValidationError(
+      message,
+      tool,
+      targetContent,
+      sdkInputValidationDiagnostic(sdkDiagnostic, tool),
+    );
+    if (
+      normalized !== undefined &&
+      isJSONRPCResultResponse(normalized) &&
+      isCallToolResult(normalized.result) &&
+      normalized.result.content.length > 0 &&
+      measureMcpResultWithinBudget(normalized.result, budget).ok
+    )
+      return normalized;
     const encoded =
       structured !== undefined
         ? encodeToolResult(structured, budget, "error-text", targetContent)
@@ -384,9 +427,6 @@ class ErrorEvidenceTransport implements Transport {
     if (encoded.ok) return message;
     const operation = tool ?? "mcp_tool_error";
     const originalResult = jsonObjectSchema.parse(message.result);
-    const sdkDiagnostic = !isStructured
-      ? message.result.content.find((item) => item.type === "text")?.text
-      : undefined;
     const retainedResult = structured ?? originalResult;
     const originalError = isStructured
       ? analysisErrorProjectionSchema.safeParse(structured?.["error"])
@@ -449,16 +489,71 @@ class ErrorEvidenceTransport implements Transport {
           : "Restart REA with a larger REA_MCP_MAX_RESPONSE_BYTES and matching client receive buffer, then retry. The original error could not be retained by this server.",
       },
     );
+    const replacement = this.delivery.toErrorToolResult(failure, targetContent);
     return {
       ...message,
       result: {
-        ...this.delivery.toErrorToolResult(failure, targetContent),
+        ...replacement,
         // The SDK stamps `resultType` on modern-era results before this
         // transport sees them; the replacement must keep the stamp or a
         // 2026-07-28 client discards REA's structured error entirely.
         ...(typeof message.result.resultType === "string"
           ? { resultType: message.result.resultType }
           : {}),
+      },
+    };
+  }
+
+  private normalizeSdkValidationError(
+    message: JSONRPCMessage,
+    tool: string | undefined,
+    targetContent: boolean,
+    diagnostic: string | undefined,
+  ): JSONRPCMessage | undefined {
+    if (
+      tool === undefined ||
+      diagnostic === undefined ||
+      !isJSONRPCResultResponse(message) ||
+      !isCallToolResult(message.result)
+    )
+      return undefined;
+    const error = new AnalysisInputError(
+      tool,
+      {
+        userMessage: `The arguments for MCP tool ${tool} do not match its advertised input schema.`,
+      },
+      [{ path: [], reason: "invalid_value", message: diagnostic }],
+    );
+    const result = this.delivery.toErrorToolResult(error, targetContent);
+    return {
+      ...message,
+      result: {
+        ...result,
+        ...(typeof message.result.resultType === "string"
+          ? { resultType: message.result.resultType }
+          : {}),
+      },
+    };
+  }
+
+  private recoverProtocolError(
+    message: JSONRPCMessage,
+    tool: string | undefined,
+  ): JSONRPCMessage {
+    const recovered = this.recoverError(message, tool);
+    if (
+      !isJSONRPCErrorResponse(recovered) ||
+      tool === undefined ||
+      recovered.error.code !== -32602 ||
+      recovered.error.message !== `Tool ${tool} not found`
+    )
+      return recovered;
+    return {
+      ...recovered,
+      error: {
+        ...recovered.error,
+        message:
+          "The requested MCP tool is not advertised by this REA server. Call tools/list, select an advertised tool, and retry; do not repeat the unknown tool name.",
       },
     };
   }
