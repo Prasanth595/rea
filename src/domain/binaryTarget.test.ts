@@ -122,9 +122,24 @@ describe("executable header parsing", () => {
     });
   });
 
-  it("rejects FAT files without a host-compatible slice", () => {
+  it("selects the first declared slice when no slice matches the host", () => {
+    const bytes = fat([0x01000007, 0x0100000c]);
+
     expect(parseExecutableHeader(fat([0x01000007]), "arm64")).toMatchObject({
-      ok: false,
+      ok: true,
+      value: {
+        format: "mach-o-universal",
+        architecture: "x86_64",
+        availableArchitectures: ["x86_64"],
+      },
+    });
+    expect(parseExecutableHeader(bytes, "riscv64")).toMatchObject({
+      ok: true,
+      value: {
+        format: "mach-o-universal",
+        architecture: "x86_64",
+        availableArchitectures: ["x86_64", "arm64"],
+      },
     });
   });
 
@@ -132,6 +147,8 @@ describe("executable header parsing", () => {
     Buffer.alloc(0),
     Buffer.from([0x7f, 0x45, 0x4c, 0x46]),
     fat([], 2),
+    // A FAT table declaring only unsupported CPU types has nothing to select.
+    fat([0x00000012]),
     pe(0xffff),
   ])("rejects malformed, truncated, or unsupported metadata", (bytes) => {
     expect(parseExecutableHeader(bytes, "arm64").ok).toBe(false);

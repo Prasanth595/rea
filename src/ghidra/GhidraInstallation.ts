@@ -111,28 +111,12 @@ const assessNativeDecompiler = (
       status: "unknown",
       detail: `${path} is executable, but no native tool format is defined for ${platform}/${architecture}`,
     };
-  let parsed =
+  // A FAT table without a host slice selects a foreign one, proving this host
+  // is excluded; a malformed host slice remains an unknown outcome.
+  const parsed =
     probe === undefined
       ? undefined
       : parseExecutableHeader(probe.bytes, architecture, probe.size);
-  if (probe !== undefined && parsed !== undefined && !parsed.ok) {
-    // FAT parsing selects a host slice. A validated foreign slice can still
-    // prove that its complete architecture table excludes this host. If the
-    // host is listed but its slice is malformed, preserve the unknown outcome.
-    for (const { node } of NATIVE_ARCHITECTURES) {
-      if (node === architecture) continue;
-      const alternative = parseExecutableHeader(probe.bytes, node, probe.size);
-      if (
-        alternative.ok &&
-        !alternative.value.availableArchitectures.some(
-          (available) => available === expectedArchitecture,
-        )
-      ) {
-        parsed = alternative;
-        break;
-      }
-    }
-  }
   if (parsed === undefined || !parsed.ok)
     return {
       status: "unknown",

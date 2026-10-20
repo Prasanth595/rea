@@ -74,7 +74,8 @@ export type ExecutableMetadata =
 
 /**
  * Parse supported executable headers without I/O. The caller supplies the host
- * architecture used for deterministic FAT Mach-O slice selection.
+ * architecture that FAT Mach-O slice selection prefers; a container without a
+ * host slice selects its first declared supported slice.
  */
 export const parseExecutableHeader = (
   bytes: Buffer,
@@ -155,17 +156,23 @@ const parseFatMachO = (
       size: declaration.size,
     });
   }
+  // Prefer the slice the host would load. A container without one still
+  // declares its images, so select the first, as a thin foreign image is.
   const preferred = fatHostArchitecture(host);
-  const slice = preferred === undefined ? undefined : slices.get(preferred);
-  if (preferred === undefined || slice === undefined)
-    return err(`FAT binary has no host-compatible ${host} architecture`);
+  const selected =
+    preferred !== undefined && slices.has(preferred)
+      ? preferred
+      : architectures[0];
+  const slice = selected === undefined ? undefined : slices.get(selected);
+  if (selected === undefined || slice === undefined)
+    return err("FAT binary declares no supported Mach-O architecture");
   const minimumHeaderSize =
-    preferred === "arm64" || preferred === "x86_64" ? 32 : 28;
+    selected === "arm64" || selected === "x86_64" ? 32 : 28;
   if (slice.size < minimumHeaderSize)
-    return err(`FAT slice for ${preferred} is shorter than its Mach-O header`);
+    return err(`FAT slice for ${selected} is shorter than its Mach-O header`);
   return ok({
     format: "mach-o-universal",
-    architecture: preferred,
+    architecture: selected,
     availableArchitectures: architectures,
     universalSlice: { offset: slice.offset, size: slice.size },
   });
