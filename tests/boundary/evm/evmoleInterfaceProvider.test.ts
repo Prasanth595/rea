@@ -422,6 +422,9 @@ it
         diagnostics: { stderr: "upstream warning" },
       });
       expect(result.value.rawResult).toEqual({ functions: [] });
+      expect(result.value.limitations).toContain(
+        "The owned worker has a 256 MiB JavaScript heap, up to 3 GiB virtual address-space profile ceiling and 30-second deadline. Virtual address space is distinct from resident memory; limits fail without partial success.",
+      );
     } else
       expect(result).toMatchObject({
         ok: false,

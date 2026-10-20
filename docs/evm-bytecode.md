@@ -105,8 +105,8 @@ CLI keeps its existing complete result.
 ## Resource and lifecycle limits
 
 Inputs are limited to 4 MiB, complete replies to 16 MiB and combined diagnostic
-output to 1 MiB. An owned worker has a 256 MiB JavaScript heap, 3 GiB virtual
-address-space limit, 30 CPU seconds and a 30-second command deadline. Virtual
+output to 1 MiB. An owned worker has a 256 MiB JavaScript heap, up to 3 GiB virtual
+address-space profile ceiling, 30 CPU seconds and a 30-second command deadline. Virtual
 address space differs from resident memory. The worker retains inherited tighter
 soft/hard limits, reports its configured soft limits inline and leaves hard limits
 unchanged. WASM trap reservations are disabled
