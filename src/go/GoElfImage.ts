@@ -141,6 +141,7 @@ export const readGoElfImage = (bytes: Buffer): GoBinaryContainer => {
       shWidth,
       "ELF section headers",
     );
+    let names: GoFileMapping | null = null;
     if (namesIndex !== 0) {
       const namesHeader = shStart + namesIndex * shWidth;
       if (reader.u32(namesHeader + 4) !== 3)
@@ -148,73 +149,74 @@ export const readGoElfImage = (bytes: Buffer): GoBinaryContainer => {
           "malformed",
           "ELF section name table is not a string table",
         );
-      const names = reader.fileRange(
+      names = reader.fileRange(
         reader.word(namesHeader + (wide ? 24 : 16), bits),
         reader.word(namesHeader + (wide ? 32 : 20), bits),
         "ELF section names",
       );
-      for (let index = 0; index < shCount; index++) {
-        const offset = shStart + index * shWidth;
-        const nameOffset = reader.u32(offset);
-        if (nameOffset >= names.size)
-          throw new GoBinaryFormatFailure(
-            "malformed",
-            "ELF section name offset is outside its string table",
-          );
-        recordElfSection(sections, {
-          bytes,
-          names,
-          nameOffset,
-          reader,
-          bits,
-          wide,
-          header: offset,
-        });
-        // Comparing the complete fixed name avoids quadratic scans through malicious string tables.
-        const expectedName = Buffer.from(".go.buildinfo\0");
-        if (
-          expectedName.length > names.size - nameOffset ||
-          !bytes
-            .subarray(
-              names.offset + nameOffset,
-              names.offset + nameOffset + expectedName.length,
-            )
-            .equals(expectedName)
-        )
-          continue;
-        if (search !== null)
-          throw new GoBinaryFormatFailure(
-            "malformed",
-            "ELF contains ambiguous build-info sections",
-          );
-        if (reader.u32(offset + 4) !== 1)
-          throw new GoBinaryFormatFailure(
-            "malformed",
-            "ELF build-info section is not file-backed data",
-          );
-        if ((reader.word(offset + 8, bits) & 0x800n) !== 0n)
-          throw new GoBinaryFormatFailure(
-            "unsupported",
-            "Compressed ELF build-info sections are unsupported",
-          );
-        const address = reader.word(offset + (wide ? 16 : 12), bits);
-        search = {
-          ...reader.fileRange(
-            reader.word(offset + (wide ? 24 : 16), bits),
-            reader.word(offset + (wide ? 32 : 20), bits),
-            "ELF build-info section",
-          ),
-          address,
-        };
-        if (
-          mappedFileOffset(mappings, address, search.size, zeroFills) !==
-          search.offset
-        )
-          throw new GoBinaryFormatFailure(
-            "malformed",
-            "ELF build-info section disagrees with its load mapping",
-          );
-      }
+    }
+    for (let index = 0; index < shCount; index++) {
+      const offset = shStart + index * shWidth;
+      const nameOffset = reader.u32(offset);
+      if (names !== null && nameOffset >= names.size)
+        throw new GoBinaryFormatFailure(
+          "malformed",
+          "ELF section name offset is outside its string table",
+        );
+      recordElfSection(sections, {
+        bytes,
+        names,
+        nameOffset,
+        reader,
+        bits,
+        wide,
+        header: offset,
+      });
+      if (names === null) continue;
+      // Comparing the complete fixed name avoids quadratic scans through malicious string tables.
+      const expectedName = Buffer.from(".go.buildinfo\0");
+      if (
+        expectedName.length > names.size - nameOffset ||
+        !bytes
+          .subarray(
+            names.offset + nameOffset,
+            names.offset + nameOffset + expectedName.length,
+          )
+          .equals(expectedName)
+      )
+        continue;
+      if (search !== null)
+        throw new GoBinaryFormatFailure(
+          "malformed",
+          "ELF contains ambiguous build-info sections",
+        );
+      if (reader.u32(offset + 4) !== 1)
+        throw new GoBinaryFormatFailure(
+          "malformed",
+          "ELF build-info section is not file-backed data",
+        );
+      if ((reader.word(offset + 8, bits) & 0x800n) !== 0n)
+        throw new GoBinaryFormatFailure(
+          "unsupported",
+          "Compressed ELF build-info sections are unsupported",
+        );
+      const address = reader.word(offset + (wide ? 16 : 12), bits);
+      search = {
+        ...reader.fileRange(
+          reader.word(offset + (wide ? 24 : 16), bits),
+          reader.word(offset + (wide ? 32 : 20), bits),
+          "ELF build-info section",
+        ),
+        address,
+      };
+      if (
+        mappedFileOffset(mappings, address, search.size, zeroFills) !==
+        search.offset
+      )
+        throw new GoBinaryFormatFailure(
+          "malformed",
+          "ELF build-info section disagrees with its load mapping",
+        );
     }
   }
   return {
@@ -233,7 +235,7 @@ const recordElfSection = (
   sections: GoImageSection[],
   input: {
     readonly bytes: Buffer;
-    readonly names: { readonly offset: number; readonly size: number };
+    readonly names: { readonly offset: number; readonly size: number } | null;
     readonly nameOffset: number;
     readonly reader: GoBinaryReader;
     readonly bits: 32 | 64;
@@ -241,7 +243,10 @@ const recordElfSection = (
     readonly header: number;
   },
 ): void => {
-  const decoded = elfSectionName(input.bytes, input.names, input.nameOffset);
+  const decoded =
+    input.names === null
+      ? ({ status: "unnamed" } as const)
+      : elfSectionName(input.bytes, input.names, input.nameOffset);
   const header = {
     reader: input.reader,
     bits: input.bits,
@@ -252,15 +257,14 @@ const recordElfSection = (
     case "named":
       sections.push(elfImageSection({ ...header, name: decoded.name }));
       return;
-    case "truncated": {
-      // Names past this window stay out of .dep-v0 matching. Read-only
+    case "truncated":
+    case "unnamed": {
+      // Unavailable or empty names stay out of .dep-v0 matching. Read-only
       // bytes can still hold the only compiler path.
       const section = elfImageSection({ ...header, name: "" });
       if (section.read_only) sections.push(section);
       return;
     }
-    case "unnamed":
-      return;
     default: {
       const unreachable: never = decoded;
       return unreachable;
