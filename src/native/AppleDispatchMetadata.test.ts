@@ -5,7 +5,11 @@ import { decodeAppleDispatchMetadata } from "./AppleDispatchMetadata.js";
 const base = 0x100000000n;
 const fixture = (
   relative = false,
-  category?: "partial-method" | "unmapped-pointer" | "unmapped-class",
+  category?:
+    | "partial-method"
+    | "unmapped-pointer"
+    | "unmapped-class"
+    | "empty-name",
 ) => {
   const bytes = Buffer.alloc(4096);
   const u32 = (offset: number, value: number) =>
@@ -112,7 +116,10 @@ const fixture = (
       ptr(0xb90, 0x5c0);
       if (category === "unmapped-class") ptr(0xb98, 0x700);
       else bytes.writeBigUInt64LE(0xffffffffffffffffn, 0xb98);
-      bytes.write("FixtureCategory\0", 0xbc0);
+      bytes.write(
+        category === "empty-name" ? "\0" : "FixtureCategory\0",
+        0xbc0,
+      );
     }
   }
   return bytes;
@@ -465,6 +472,34 @@ describe("Apple dispatch coverage ownership", () => {
     ).toMatchObject({
       status: "partial",
       reason: expect.stringContaining("category_decode_failed"),
+    });
+  });
+  it("keeps the class when an Objective-C category name is empty", () => {
+    const baseline = decodeAppleDispatchMetadata(fixture(), 100, provenance);
+    const result = decodeAppleDispatchMetadata(
+      fixture(false, "empty-name"),
+      100,
+      provenance,
+    );
+    expect(result.objc_classes).toEqual(baseline.objc_classes);
+    expect(result.objc_categories).toEqual([]);
+    const baselineClassCoverage = baseline.coverage.find(
+      ({ facet }) => facet === "objc_class_method_ivar_metadata",
+    );
+    const classCoverage = result.coverage.find(
+      ({ facet }) => facet === "objc_class_method_ivar_metadata",
+    );
+    expect(baselineClassCoverage).toBeDefined();
+    expect(classCoverage).toEqual(baselineClassCoverage);
+    expect(
+      result.coverage.find(
+        ({ facet }) => facet === "objc_properties_categories",
+      ),
+    ).toMatchObject({
+      status: "partial",
+      reason: expect.stringContaining(
+        "category_decode_failed at 0x100000b00: Objective-C category has an empty name",
+      ),
     });
   });
 });
