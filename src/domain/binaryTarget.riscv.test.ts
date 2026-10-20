@@ -91,6 +91,68 @@ describe("RISC-V ELF header boundaries", () => {
     });
   });
 
+  it.each([
+    [true, 32],
+    [true, 64],
+  ] as const)(
+    "detects PT_INTERP in program headers for PIE (little=%s, class=%s)",
+    (little, bits) => {
+      const is64 = bits === 64;
+      const hdrSize = is64 ? 64 : 52;
+      const phentsize = is64 ? 56 : 32;
+      const bytes = Buffer.alloc(hdrSize + phentsize);
+      bytes.set([0x7f, 0x45, 0x4c, 0x46, is64 ? 2 : 1, little ? 1 : 2, 1]);
+      if (little) {
+        bytes.writeUInt16LE(3, 16); // ET_DYN
+        bytes.writeUInt16LE(243, 18); // EM_RISCV
+        bytes.writeUInt32LE(1, 20);
+        bytes.writeUInt16LE(hdrSize, is64 ? 52 : 40);
+        bytes.writeUInt32LE(0x5, is64 ? 48 : 36); // e_flags
+        if (is64) {
+          bytes.writeBigUInt64LE(BigInt(hdrSize), 32); // e_phoff
+          bytes.writeUInt16LE(phentsize, 54); // e_phentsize
+          bytes.writeUInt16LE(1, 56); // e_phnum
+        } else {
+          bytes.writeUInt32LE(hdrSize, 28); // e_phoff
+          bytes.writeUInt16LE(phentsize, 42); // e_phentsize
+          bytes.writeUInt16LE(1, 44); // e_phnum
+        }
+        bytes.writeUInt32LE(3, hdrSize); // PT_INTERP
+      }
+      const parsed = parseExecutableHeader(bytes, "x64");
+      if (!parsed.ok) throw new Error(parsed.error);
+      expect(parsed.value).toEqual({
+        format: "elf",
+        architecture: "riscv",
+        availableArchitectures: ["riscv"],
+        riscv: {
+          elfClass: bits,
+          byteOrder: "little",
+          type: 3,
+          flags: 0x5,
+          hasInterpreter: true,
+        },
+      });
+    },
+  );
+
+  it("does not set hasInterpreter when program headers omit PT_INTERP", () => {
+    const bytes = header(true, 64, 0x5, 3);
+    const parsed = parseExecutableHeader(bytes, "x64");
+    if (!parsed.ok) throw new Error(parsed.error);
+    expect(parsed.value).toEqual({
+      format: "elf",
+      architecture: "riscv",
+      availableArchitectures: ["riscv"],
+      riscv: {
+        elfClass: 64,
+        byteOrder: "little",
+        type: 3,
+        flags: 0x5,
+      },
+    });
+  });
+
   it("keeps an unknown e_machine outside the recognized family set", () => {
     expect(parseExecutableHeader(header(true, 32, 0x5, 2, 244), "x64")).toEqual(
       {

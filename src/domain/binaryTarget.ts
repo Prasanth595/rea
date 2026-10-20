@@ -208,6 +208,49 @@ const fatIdentityError = (
   return null;
 };
 
+const PT_INTERP = 3;
+
+const elfHasInterpreter = (
+  bytes: Buffer,
+  elfClass: 32 | 64,
+  little: boolean,
+): boolean => {
+  const is64 = elfClass === 64;
+  const minimumHeaderSize = is64 ? 64 : 52;
+  if (bytes.length < minimumHeaderSize) return false;
+
+  const phoff = is64
+    ? Number(little ? bytes.readBigUInt64LE(32) : bytes.readBigUInt64BE(32))
+    : little
+      ? bytes.readUInt32LE(28)
+      : bytes.readUInt32BE(28);
+  const phentsize = little
+    ? bytes.readUInt16LE(is64 ? 54 : 42)
+    : bytes.readUInt16BE(is64 ? 54 : 42);
+  const phnum = little
+    ? bytes.readUInt16LE(is64 ? 56 : 44)
+    : bytes.readUInt16BE(is64 ? 56 : 44);
+
+  const minPhentsize = is64 ? 56 : 32;
+  if (
+    phoff < minimumHeaderSize ||
+    phentsize < minPhentsize ||
+    phnum === 0 ||
+    phnum === 0xffff
+  )
+    return false;
+
+  for (let i = 0; i < phnum; i += 1) {
+    const entryOffset = phoff + i * phentsize;
+    if (entryOffset + 4 > bytes.length) break;
+    const pType = little
+      ? bytes.readUInt32LE(entryOffset)
+      : bytes.readUInt32BE(entryOffset);
+    if (pType === PT_INTERP) return true;
+  }
+  return false;
+};
+
 const parseElf = (
   bytes: Buffer,
   fileSize: number,
@@ -223,6 +266,7 @@ const parseElf = (
     architecture === "powerpc"
   ) {
     const flagsOffset = elfClass === 32 ? 36 : 48;
+    const hasInterpreter = elfHasInterpreter(bytes, elfClass, little);
     const metadata: ElfFamilyMetadata = {
       elfClass,
       byteOrder: little ? "little" : "big",
@@ -230,6 +274,7 @@ const parseElf = (
       flags: little
         ? bytes.readUInt32LE(flagsOffset)
         : bytes.readUInt32BE(flagsOffset),
+      ...(hasInterpreter ? { hasInterpreter: true } : {}),
     };
     if (architecture === "powerpc")
       return ok({

@@ -463,6 +463,92 @@ const resolveAppBundle = async (
   return resolveAppBundleExecutable(path);
 };
 
+const PT_INTERP = 3;
+const MAX_PH_CHUNK_BYTES = 65536;
+const MAX_PH_SCAN_ENTRIES = 4096;
+
+const scanElfHasInterpreter = async (
+  handle: FileHandle,
+  fileSize: number,
+  bytes: Buffer,
+  signal?: AbortSignal,
+): Promise<boolean> => {
+  if (
+    bytes.length < 4 ||
+    !bytes.subarray(0, 4).equals(Buffer.from([0x7f, 0x45, 0x4c, 0x46]))
+  ) {
+    return false;
+  }
+  const is64 = bytes[4] === 2;
+  const little = bytes[5] === 1;
+  const minHdr = is64 ? 64 : 52;
+  if (bytes.length < minHdr) return false;
+
+  const phoff = is64
+    ? Number(little ? bytes.readBigUInt64LE(32) : bytes.readBigUInt64BE(32))
+    : little
+      ? bytes.readUInt32LE(28)
+      : bytes.readUInt32BE(28);
+  const phentsize = little
+    ? bytes.readUInt16LE(is64 ? 54 : 42)
+    : bytes.readUInt16BE(is64 ? 54 : 42);
+  const phnum = little
+    ? bytes.readUInt16LE(is64 ? 56 : 44)
+    : bytes.readUInt16BE(is64 ? 56 : 44);
+
+  const minPhentsize = is64 ? 56 : 32;
+  if (
+    !Number.isSafeInteger(phoff) ||
+    phoff < minHdr ||
+    phentsize < minPhentsize ||
+    phnum === 0 ||
+    phnum === 0xffff ||
+    phoff >= fileSize
+  ) {
+    return false;
+  }
+
+  const entriesToScan = Math.min(phnum, MAX_PH_SCAN_ENTRIES);
+  let entriesChecked = 0;
+
+  while (entriesChecked < entriesToScan) {
+    throwIfTargetResolutionCancelled(signal);
+    const entriesRemaining = entriesToScan - entriesChecked;
+    const currentOffset = phoff + entriesChecked * phentsize;
+    if (currentOffset >= fileSize) break;
+
+    const maxEntriesInChunk = Math.max(
+      1,
+      Math.floor(MAX_PH_CHUNK_BYTES / phentsize),
+    );
+    const entriesInChunk = Math.min(entriesRemaining, maxEntriesInChunk);
+    const bytesToRead = Math.min(
+      entriesInChunk * phentsize,
+      fileSize - currentOffset,
+    );
+    if (bytesToRead < 4) break;
+
+    const chunk = Buffer.alloc(bytesToRead);
+    const readResult = await handle.read(chunk, 0, bytesToRead, currentOffset);
+    throwIfTargetResolutionCancelled(signal);
+
+    const actualBytes = readResult.bytesRead;
+    for (let i = 0; i < entriesInChunk; i += 1) {
+      const entryOffset = i * phentsize;
+      if (entryOffset + 4 > actualBytes) break;
+      const pType = little
+        ? chunk.readUInt32LE(entryOffset)
+        : chunk.readUInt32BE(entryOffset);
+      if (pType === PT_INTERP) return true;
+    }
+
+    entriesChecked += entriesInChunk;
+    if (actualBytes < bytesToRead) break;
+  }
+
+  return false;
+};
+
 const readExecutableMetadata = async (
   handle: FileHandle,
   hostArchitecture: NodeJS.Architecture,
@@ -551,11 +637,29 @@ const readExecutableMetadata = async (
     }
   }
   const parsed = parseExecutableHeader(bytes, hostArchitecture, fileSize);
+  if (!parsed.ok) return parsed;
   if (
-    !parsed.ok ||
-    parsed.value.architecture !== "mips" ||
-    parsed.value.mips.elfClass !== 32
-  )
+    parsed.value.architecture === "riscv" &&
+    parsed.value.riscv.type === 3 &&
+    !parsed.value.riscv.hasInterpreter
+  ) {
+    const hasInterpreter = await scanElfHasInterpreter(
+      handle,
+      fileSize,
+      bytes,
+      signal,
+    );
+    if (hasInterpreter) {
+      return ok({
+        ...parsed.value,
+        riscv: {
+          ...parsed.value.riscv,
+          hasInterpreter: true,
+        },
+      });
+    }
+  }
+  if (parsed.value.architecture !== "mips" || parsed.value.mips.elfClass !== 32)
     return parsed;
   const declarations = await readMipsElfMetadata(
     handle,
