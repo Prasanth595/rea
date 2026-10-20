@@ -38,6 +38,20 @@ export async function verifyLargeScreenshotE2e(endpoint, origin) {
       target,
       "Owned screenshot page is absent from actual CDP discovery",
     );
+    // Emulation geometry can differ from the native compositor surface.
+    // The direct browser result is the pixel oracle for the public adapters.
+    const session = await context.newCDPSession(page);
+    let expectedPng;
+    try {
+      const result = await session.send("Page.captureScreenshot", {
+        format: "png",
+        fromSurface: true,
+        captureBeyondViewport: false,
+      });
+      expectedPng = Buffer.from(result.data, "base64");
+    } finally {
+      await session.detach();
+    }
     const { stdout } = await promisify(execFile)(
       process.execPath,
       [
@@ -64,8 +78,11 @@ export async function verifyLargeScreenshotE2e(endpoint, origin) {
       bytes.subarray(0, 8),
       Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
     );
-    assert.equal(bytes.readUInt32BE(16), 2048);
-    assert.equal(bytes.readUInt32BE(20), 1536);
+    assert.deepEqual(bytes, expectedPng);
+    assert.deepEqual(screenshot.viewport, {
+      width: expectedPng.readUInt32BE(16),
+      height: expectedPng.readUInt32BE(20),
+    });
     await verifyDefaultScreenshotDelivery({
       entrypoint,
       environment: env,

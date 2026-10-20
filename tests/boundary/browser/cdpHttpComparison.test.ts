@@ -145,6 +145,11 @@ describe("HTTP comparison repeated request coverage", () => {
         { ...response, requestId: "first-after", encodedDataLength: 100 },
       ],
     );
+    // The common 100-byte sample may be the only mutually captured request.
+    // Establish complete inventories before using the other samples as changes;
+    // the missing response status/MIME facts remain independently incomplete.
+    expect(compareNetwork(before, after).status).toBe("unknown");
+    markNetworkInventoriesComplete(before, after);
     expect(compareNetwork(before, after).status).toBe("changed");
   });
 
