@@ -1231,7 +1231,7 @@ const managerWithFakeSpawner = (
     platform: "linux",
     environment: { REA_GDB_COMMAND: "fake-gdb" },
     spawnProcess,
-    verifyInferiorOutputSink: async () => undefined,
+    verifyInferiorOutputSink: async () => "durable",
     ...options,
   });
   managers.push(manager);
@@ -1342,6 +1342,47 @@ it("rejects a pre-cancelled GDB start and an unconfigured executable", async () 
     expect(missing.error._tag).toBe("AnalysisCapabilityUnavailableError");
     expect(missing.error.message).toContain("does-not-exist-gdb");
   }
+});
+
+it("restores the caller's run ID for the inferior through a startup directive", async () => {
+  const seen: string[][] = [];
+  const spawn = async (options: OwnedProviderProcessSpawnOptions) => {
+    seen.push([...options.arguments]);
+    return createFakeSpawner().spawnProcess(options);
+  };
+  for (const [environment, expected] of [
+    [{}, "unset environment REA_PROCESS_RUN_ID"],
+    [
+      { REA_PROCESS_RUN_ID: "caller-run" },
+      "set environment REA_PROCESS_RUN_ID caller-run",
+    ],
+  ] as const) {
+    seen.length = 0;
+    const manager = new GdbSessionManager({
+      platform: "linux",
+      environment,
+      spawnProcess: spawn,
+    });
+    managers.push(manager);
+    await manager.start();
+    expect(seen[0]).toContain("-iex");
+    expect(seen[0]?.at(-1)).toBe(expected);
+  }
+});
+
+it("refuses a caller run ID that cannot be expressed as one directive", async () => {
+  const manager = new GdbSessionManager({
+    platform: "linux",
+    environment: { REA_PROCESS_RUN_ID: "a\nb" },
+    spawnProcess: async () => {
+      throw new Error("must not spawn");
+    },
+  });
+  managers.push(manager);
+
+  const started = await manager.start();
+
+  expect(started.ok).toBe(false);
 });
 
 it("retries MI2 after an MI3 process exits before its startup prompt", async () => {
@@ -1989,6 +2030,52 @@ it.each([
   },
 );
 
+it("retains ownership when descriptor readback omits input confirmation", async () => {
+  const commands: string[] = [];
+  let inferiorAlive = true;
+  const fake = createFakeSpawner((child, token, command) => {
+    commands.push(command);
+    const response = command.includes("inferior-tty-show")
+      ? '^done,inferior_tty_terminal="/dev/pts/42"'
+      : command.includes("list-thread-groups")
+        ? '^done,groups=[{id="i1",pid="123"}]'
+        : "^done";
+    child.stdout.write(`${token}${response}\n`);
+  });
+  const manager = managerWithFakeSpawner(fake.spawnProcess, {
+    // Exercise malformed output from the injected descriptor boundary.
+    verifyInferiorOutputSink: async (pid, _tty, rememberIdentity) => {
+      rememberIdentity({ pid, startTime: "controlled-inferior" });
+      return undefined as never;
+    },
+    readInferiorProcessStartTime: async () =>
+      inferiorAlive ? "controlled-inferior" : null,
+  });
+  const started = await expectGdbSessionStarted(manager, undefined, {
+    inferiorTty: "/dev/pts/42",
+  });
+
+  const closed = await manager.close(started.value.session_id);
+
+  expect(closed.ok).toBe(false);
+  expect(manager.status(started.value.session_id)).toBeDefined();
+  expect(commands).not.toContain("-target-detach");
+  expect(fake.children[0]?.killSignals).toEqual([]);
+
+  const gdb = fake.children[0];
+  if (gdb === undefined) throw new Error("Fake GDB did not spawn");
+  gdb.exitLeader(0);
+  gdb.closeInheritedOutput();
+  inferiorAlive = false;
+  const retried = await manager.close(started.value.session_id);
+
+  expect(retried).toMatchObject({
+    ok: true,
+    value: { target_state: "unknown" },
+  });
+  expect(manager.status(started.value.session_id)).toBeUndefined();
+});
+
 it("detaches a live inferior before the shared stop helper signals GDB", async () => {
   const tty = "/dev/pts/42";
   const commands: string[] = [];
@@ -2147,6 +2234,7 @@ it.each([
         if (capturedStartTime === undefined)
           throw new Error("Controlled inferior identity was unreadable");
         rememberIdentity({ pid: observedPid, startTime: capturedStartTime });
+        return "durable";
       },
       readInferiorProcessStartTime: async (observedPid) => {
         if (observedPid !== pid || !inferiorAlive) return null;

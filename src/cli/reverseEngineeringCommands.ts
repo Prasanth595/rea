@@ -301,7 +301,9 @@ export const registerReverseEngineeringCommands = (
       inferiorTty: z
         .string()
         .min(1)
-        .describe("Caller-selected Linux TTY for inferior stdout and stderr."),
+        .describe(
+          "Caller-selected Linux TTY for inferior stdin, stdout and stderr; the inferior may consume terminal input.",
+        ),
       backend: z
         .string()
         .min(1)
