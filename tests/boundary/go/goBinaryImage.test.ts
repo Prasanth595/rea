@@ -5,11 +5,9 @@ import {
   fatImage,
   machoImage,
 } from "../../../src/artifacts/apple/MachoImage.fixture.js";
-import {
-  readGoBinaryImage,
-  GoBinaryResourceFailure,
-} from "../../../src/go/GoBinaryImage.js";
-import { readGoMachoImage } from "../../../src/go/GoMachoImage.js";
+import { readGoBinaryImage } from "../../../src/go/GoBinaryImage.js";
+import { BinaryResourceFailure } from "../../../src/native/metadata/BinaryContainer.js";
+import { readMachoImage } from "../../../src/native/metadata/MachoImage.js";
 import {
   createGoBinaryFixture,
   createGoSplitElfFixture,
@@ -19,7 +17,7 @@ import {
 
 it("bounds cumulative header searches across overlapping ELF file spans", () => {
   const bytes = createGoOverlappingElfFixture();
-  expect(() => readGoBinaryImage(bytes)).toThrow(GoBinaryResourceFailure);
+  expect(() => readGoBinaryImage(bytes)).toThrow(BinaryResourceFailure);
   expect(() => readGoBinaryImage(bytes)).toThrow(/256 MiB.*search/);
 });
 
@@ -633,7 +631,7 @@ it("does not mark Mach-O section bytes outside their owning segment as read-only
   fixture.bytes.writeBigUInt64LE(0x10c00n, section + 32);
   fixture.bytes.writeBigUInt64LE(128n, section + 40);
   fixture.bytes.writeUInt32LE(3072, section + 48);
-  const image = readGoMachoImage(fixture.bytes);
+  const image = readMachoImage(fixture.bytes);
   expect(image.sections[0]).toMatchObject({
     file_backed: false,
     read_only: false,

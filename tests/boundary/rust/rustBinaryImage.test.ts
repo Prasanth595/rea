@@ -2,11 +2,13 @@ import { expect, it } from "vitest";
 import { fat } from "../../../src/domain/binaryTarget.fixture.js";
 import {
   createRustImage,
+  createRustImageWithGoSection,
   createRustHashOverflowImage,
   RUSTC_HASH,
   rustDependencyPayload,
 } from "../../fixtures/rust/image.js";
 import { readRustBinaryImage } from "../../../src/rust/RustBinaryImage.js";
+import { readGoBinaryImage } from "../../../src/go/GoBinaryImage.js";
 import { RustAuditableFormatFailure } from "../../../src/rust/RustAuditableReader.js";
 
 const packages = [
@@ -139,3 +141,27 @@ it("refuses read-only data with more distinct rustc paths than it retains", () =
     }),
   );
 });
+
+it.each([
+  ["elf", "compressed"],
+  ["elf", "unmapped"],
+  ["elf", "zero-fill"],
+  ["elf", "duplicate"],
+  ["macho", "unmapped"],
+  ["macho", "zero-fill"],
+  ["macho", "duplicate"],
+] as const)(
+  "retains Rust evidence beside an unrelated %s %s Go section",
+  (format, fault) => {
+    const bytes = createRustImageWithGoSection(format, fault);
+    expect(() => readGoBinaryImage(bytes)).toThrow(/build-info|mapped/i);
+    expect(readRustBinaryImage(bytes)).toMatchObject({
+      format,
+      auditable_metadata: { file_offset: 1024, packages },
+      rustc_commit: {
+        evidence_kind: "inferred",
+        hashes: [{ hash: RUSTC_HASH, file_offset: 2048 }],
+      },
+    });
+  },
+);

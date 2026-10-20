@@ -1,20 +1,19 @@
 import {
   declaredFileRange,
-  GoBinaryFormatFailure,
-  GoBinaryReader,
-  mappedFileOffset,
-  type GoBinaryContainer,
-  type GoFileMapping,
-  type GoImageSection,
-  type GoZeroFillMapping,
-} from "./GoBinaryContainer.js";
+  BinaryFormatFailure,
+  BinaryReader,
+  type BinaryContainer,
+  type FileMapping,
+  type ImageSection,
+  type ZeroFillMapping,
+} from "./BinaryContainer.js";
 
 /** Read thin Mach-O images, retaining the slice's exact file-backed mappings. */
-export const readGoMachoImage = (bytes: Buffer): GoBinaryContainer => {
+export const readMachoImage = (bytes: Buffer): BinaryContainer => {
   const magic = bytes.readUInt32BE(0);
   const little = magic === 0xcefaedfe || magic === 0xcffaedfe;
   const bits = magic === 0xfeedfacf || magic === 0xcffaedfe ? 64 : 32;
-  const reader = new GoBinaryReader(bytes, little);
+  const reader = new BinaryReader(bytes, little);
   const headerSize = bits === 64 ? 32 : 28;
   reader.range(0, headerSize, "Mach-O header");
   const count = reader.u32(16);
@@ -26,36 +25,35 @@ export const readGoMachoImage = (bytes: Buffer): GoBinaryContainer => {
     "Mach-O load commands",
   );
   if (count > Math.floor(commandBytes / 8))
-    throw new GoBinaryFormatFailure(
+    throw new BinaryFormatFailure(
       "malformed",
       "Mach-O command count exceeds its load-command range",
     );
-  const mappings: GoFileMapping[] = [];
-  const zeroFills: GoZeroFillMapping[] = [];
-  const sections: GoImageSection[] = [];
-  const named: GoFileMapping[] = [];
-  let fallback: GoFileMapping | null = null;
+  const mappings: FileMapping[] = [];
+  const zeroFills: ZeroFillMapping[] = [];
+  const sections: ImageSection[] = [];
+  let fallback: FileMapping | null = null;
   let offset = commandStart;
   const end = commandStart + commandBytes;
   for (let index = 0; index < count; index++) {
     const command = reader.u32(offset);
     const size = reader.u32(offset + 4);
     if (size < 8 || size % 4 !== 0 || size > end - offset)
-      throw new GoBinaryFormatFailure(
+      throw new BinaryFormatFailure(
         "malformed",
         "Mach-O load command size is invalid or truncated",
       );
     if (command === 1 || command === 0x19) {
       const wide = command === 0x19;
       if (wide !== (bits === 64))
-        throw new GoBinaryFormatFailure(
+        throw new BinaryFormatFailure(
           "malformed",
           "Mach-O segment command does not match the header width",
         );
       const segmentHeader = wide ? 72 : 56;
       const sectionWidth = wide ? 80 : 68;
       if (size < segmentHeader)
-        throw new GoBinaryFormatFailure(
+        throw new BinaryFormatFailure(
           "malformed",
           "Mach-O segment header is truncated",
         );
@@ -71,12 +69,12 @@ export const readGoMachoImage = (bytes: Buffer): GoBinaryContainer => {
         (!unmapped && fileSize > memorySize) ||
         address + memorySize > 1n << BigInt(bits)
       )
-        throw new GoBinaryFormatFailure(
+        throw new BinaryFormatFailure(
           "malformed",
           "Mach-O segment addresses or sizes are invalid",
         );
       if (sectionCount > Math.floor((size - segmentHeader) / sectionWidth))
-        throw new GoBinaryFormatFailure(
+        throw new BinaryFormatFailure(
           "malformed",
           "Mach-O section table exceeds its segment command",
         );
@@ -119,6 +117,9 @@ export const readGoMachoImage = (bytes: Buffer): GoBinaryContainer => {
             header: section,
             name: `${fixedName(reader.range(section + 16, 16, "Mach-O section segment"))},${sectionName}`,
             protection,
+            sectionName,
+            segmentMapping: mapping ?? null,
+            segmentUnmapped: unmapped,
             unmapped: unmapped || mapping === undefined,
             segmentAddress: address,
             segmentMemorySize: memorySize,
@@ -126,55 +127,14 @@ export const readGoMachoImage = (bytes: Buffer): GoBinaryContainer => {
             segmentFileSize: fileSize,
           }),
         );
-        if (sectionName !== "__go_buildinfo") continue;
-        if (unmapped)
-          throw new GoBinaryFormatFailure(
-            "malformed",
-            "Mach-O build-info section is in an unmapped segment",
-          );
-        if (mapping === undefined)
-          throw new GoBinaryFormatFailure(
-            "malformed",
-            "Mach-O build-info section is not file mapped",
-          );
-        const sectionFlags = reader.u32(section + (wide ? 64 : 56));
-        if ([1, 0xc, 0x12].includes(sectionFlags & 0xff))
-          throw new GoBinaryFormatFailure(
-            "malformed",
-            "Mach-O build-info section is zero-fill data",
-          );
-        const sectionAddress = reader.word(section + 32, bits);
-        const sectionSize = reader.word(section + (wide ? 40 : 36), bits);
-        const sectionOffset = BigInt(reader.u32(section + (wide ? 48 : 40)));
-        const info = {
-          ...reader.fileRange(
-            sectionOffset,
-            sectionSize,
-            "Mach-O build-info section",
-          ),
-          address: sectionAddress,
-        };
-        if (
-          mappedFileOffset([mapping], sectionAddress, info.size) !== info.offset
-        )
-          throw new GoBinaryFormatFailure(
-            "malformed",
-            "Mach-O build-info section disagrees with its segment",
-          );
-        named.push(info);
       }
     }
     offset += size;
   }
   if (offset !== end)
-    throw new GoBinaryFormatFailure(
+    throw new BinaryFormatFailure(
       "malformed",
       "Mach-O load-command byte count does not match its commands",
-    );
-  if (named.length > 1)
-    throw new GoBinaryFormatFailure(
-      "malformed",
-      "Mach-O has ambiguous build-info sections",
     );
   const cpu = reader.u32(4);
   const names = new Map([
@@ -193,7 +153,7 @@ export const readGoMachoImage = (bytes: Buffer): GoBinaryContainer => {
     mappings,
     zero_fills: zeroFills,
     sections,
-    search: named.length > 0 ? named : fallback === null ? [] : [fallback],
+    data_ranges: fallback === null ? [] : [fallback],
   };
 };
 
@@ -204,24 +164,30 @@ const machoImageSection = ({
   header,
   name,
   protection,
+  sectionName,
+  segmentMapping,
+  segmentUnmapped,
   unmapped,
   segmentAddress,
   segmentMemorySize,
   segmentFileOffset,
   segmentFileSize,
 }: {
-  readonly reader: GoBinaryReader;
+  readonly reader: BinaryReader;
   readonly bits: 32 | 64;
   readonly wide: boolean;
   readonly header: number;
   readonly name: string;
   readonly protection: number;
+  readonly sectionName: string;
+  readonly segmentMapping: FileMapping | null;
+  readonly segmentUnmapped: boolean;
   readonly unmapped: boolean;
   readonly segmentAddress: bigint;
   readonly segmentMemorySize: bigint;
   readonly segmentFileOffset: bigint;
   readonly segmentFileSize: bigint;
-}): GoImageSection => {
+}): ImageSection => {
   const flags = reader.u32(header + (wide ? 64 : 56));
   const zeroFill = [1, 0xc, 0x12].includes(flags & 0xff);
   const sectionAddress = reader.word(header + 32, bits);
@@ -239,11 +205,7 @@ const machoImageSection = ({
     sectionSize <= segmentFileSize - fileDelta;
   const range = unmapped
     ? { offset: 0, size: 0, file_backed: false }
-    : declaredFileRange(
-        reader.bytes.length,
-        BigInt(reader.u32(header + (wide ? 48 : 40))),
-        reader.word(header + (wide ? 40 : 36), bits),
-      );
+    : declaredFileRange(reader.bytes.length, sectionOffset, sectionSize);
   const fileBacked =
     range.file_backed && !zeroFill && inSegmentMemory && inSegmentFile;
   const readOnly =
@@ -252,7 +214,14 @@ const machoImageSection = ({
     (protection & 2) === 0 &&
     (flags & 0x80000400) === 0;
   return {
+    format: "macho",
     name,
+    section_name: sectionName,
+    type: flags & 0xff,
+    address: sectionAddress,
+    declared_range: { offset: sectionOffset, size: sectionSize },
+    segment_mapping: segmentMapping,
+    segment_unmapped: segmentUnmapped,
     ...range,
     file_backed: fileBacked,
     read_only: readOnly,
