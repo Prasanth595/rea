@@ -5,8 +5,13 @@ import type { JsonValue } from "../jsonValue.js";
 import { isImmutableJsonSnapshot } from "../immutableJson.js";
 import {
   il2cppMetadataImageSchema,
+  il2cppMetadataMemberSchema,
   il2cppMetadataMethodSchema,
   il2cppMetadataSectionSchema,
+  il2cppMetadataParameterSchema,
+  il2cppMetadataStringLiteralSchema,
+  il2cppMethodAddressSchema,
+  il2cppTypeReferenceSchema,
   il2cppMetadataObjectSchema,
   il2cppMetadataSchema,
   il2cppMetadataTypeSchema,
@@ -29,10 +34,39 @@ const countsSchema = z.strictObject({
   types: z.number().int().nonnegative(),
   methods: z.number().int().nonnegative(),
   nested_types: z.number().int().nonnegative(),
+  fields: z.number().int().nonnegative(),
+  properties: z.number().int().nonnegative(),
+  events: z.number().int().nonnegative(),
+  parameters: z.number().int().nonnegative(),
+  string_literals: z.number().int().nonnegative(),
+  method_addresses: z.number().int().nonnegative(),
+  /** method_addresses rows per state; all zero without a linked binary. */
+  method_address_states: z.strictObject({
+    code: z.number().int().nonnegative(),
+    no_body: z.number().int().nonnegative(),
+    unknown: z.number().int().nonnegative(),
+  }),
+  return_types: z.number().int().nonnegative(),
+  field_types: z.number().int().nonnegative(),
+  parameter_types: z.number().int().nonnegative(),
 });
 
 export const il2cppMetadataSummarySchema = il2cppMetadataObjectSchema
-  .omit({ images: true, types: true, methods: true, sections: true })
+  .omit({
+    sections: true,
+    images: true,
+    types: true,
+    methods: true,
+    fields: true,
+    properties: true,
+    events: true,
+    parameters: true,
+    string_literals: true,
+    method_addresses: true,
+    return_types: true,
+    field_types: true,
+    parameter_types: true,
+  })
   .extend({ counts: countsSchema });
 
 const indexSchema = z.number().int().nonnegative();
@@ -44,13 +78,28 @@ const typeRowSchema = il2cppMetadataTypeSchema.extend({ index: indexSchema });
 const methodRowSchema = il2cppMetadataMethodSchema.extend({
   index: indexSchema,
 });
-const page = {
+const memberRowSchema = il2cppMetadataMemberSchema.extend({
+  index: indexSchema,
+});
+const parameterRowSchema = il2cppMetadataParameterSchema.extend({
+  index: indexSchema,
+});
+const stringLiteralRowSchema = il2cppMetadataStringLiteralSchema.extend({
+  index: indexSchema,
+});
+const methodAddressRowSchema = il2cppMethodAddressSchema.extend({
+  index: indexSchema,
+});
+const typeReferenceRowSchema = il2cppTypeReferenceSchema.extend({
+  index: indexSchema,
+});
+const indexPage = {
   kind: z.literal("il2cpp-metadata"),
   indices: z.array(indexSchema).optional(),
-  names: z.array(z.string()).optional(),
   offset: indexSchema.default(0),
   limit: z.number().int().positive().default(64),
 };
+const page = { ...indexPage, names: z.array(z.string()).optional() };
 const declaringTypes = z.array(z.number().int().min(-1)).optional();
 
 /** Filters intersect; pages use metadata order and always retain the source row index. */
@@ -81,6 +130,37 @@ export const il2cppMetadataViewRequestSchema = z.discriminatedUnion(
       declaring_types: declaringTypes,
       fields: z.array(methodRowSchema.keyof()).optional(),
     }),
+    ...(["fields", "properties", "events"] as const).map((collection) =>
+      z.strictObject({
+        ...page,
+        collection: z.literal(collection),
+        declaring_types: declaringTypes,
+        fields: z.array(memberRowSchema.keyof()).optional(),
+      }),
+    ),
+    z.strictObject({
+      ...page,
+      collection: z.literal("parameters"),
+      fields: z.array(parameterRowSchema.keyof()).optional(),
+    }),
+    z.strictObject({
+      ...indexPage,
+      collection: z.literal("string_literals"),
+      fields: z.array(stringLiteralRowSchema.keyof()).optional(),
+    }),
+    z.strictObject({
+      ...indexPage,
+      collection: z.literal("method_addresses"),
+      fields: z.array(methodAddressRowSchema.keyof()).optional(),
+    }),
+    ...(["return_types", "field_types", "parameter_types"] as const).map(
+      (collection) =>
+        z.strictObject({
+          ...indexPage,
+          collection: z.literal(collection),
+          fields: z.array(typeReferenceRowSchema.keyof()).optional(),
+        }),
+    ),
   ],
 );
 
@@ -89,6 +169,11 @@ export const il2cppMetadataViewItemsSchema = z.union([
   z.array(imageRowSchema.partial().required({ index: true })),
   z.array(typeRowSchema.partial().required({ index: true })),
   z.array(methodRowSchema.partial().required({ index: true })),
+  z.array(memberRowSchema.partial().required({ index: true })),
+  z.array(parameterRowSchema.partial().required({ index: true })),
+  z.array(stringLiteralRowSchema.partial().required({ index: true })),
+  z.array(methodAddressRowSchema.partial().required({ index: true })),
+  z.array(typeReferenceRowSchema.partial().required({ index: true })),
 ]);
 
 export const il2cppMetadataViewContextSchema = z.strictObject({
@@ -135,6 +220,24 @@ const parseMetadataReport = (
         (count, type) => count + Number(type.declaring_type !== -1),
         0,
       ),
+      fields: report.fields.length,
+      properties: report.properties.length,
+      events: report.events.length,
+      parameters: report.parameters.length,
+      string_literals: report.string_literals.length,
+      method_addresses: report.method_addresses.length,
+      method_address_states: report.method_addresses.reduce(
+        (states, row) => {
+          if (row.state === "code") states.code++;
+          else if (row.state === "no-body") states.no_body++;
+          else states.unknown++;
+          return states;
+        },
+        { code: 0, no_body: 0, unknown: 0 },
+      ),
+      return_types: report.return_types.length,
+      field_types: report.field_types.length,
+      parameter_types: report.parameter_types.length,
     },
   };
   if (reusable) checkedReports.set(key, checked);
@@ -168,10 +271,12 @@ const selectFields = (
 
 /** Compile caller selections once; large batches do not multiply per-row work. */
 const selection = (view: Request, report: Report) => {
-  const names = view.names === undefined ? undefined : new Set(view.names);
+  const names =
+    !("names" in view) || view.names === undefined
+      ? undefined
+      : new Set(view.names);
   const owners =
-    (view.collection !== "types" && view.collection !== "methods") ||
-    view.declaring_types === undefined
+    !("declaring_types" in view) || view.declaring_types === undefined
       ? undefined
       : new Set(view.declaring_types);
   const namespaces =
@@ -203,7 +308,11 @@ const selection = (view: Request, report: Report) => {
     }
   }
   return (row: Row, index: number) => {
-    if (names !== undefined && !names.has(row.name)) return false;
+    if (
+      names !== undefined &&
+      (!("name" in row) || row.name === null || !names.has(row.name))
+    )
+      return false;
     if (
       owners !== undefined &&
       (!("declaring_type" in row) || !owners.has(row.declaring_type))
@@ -239,7 +348,7 @@ export const projectIl2cppMetadataView = (
           path: ["view"],
           reason: "invalid_value",
           message:
-            "IL2CPP metadata Evidence supports summary and selected sections/images/types/methods pages.",
+            "IL2CPP metadata Evidence supports summary and selected sections, images, types, methods, member, parameter, string literal, method address and type reference pages.",
         },
       ]),
     );
@@ -262,7 +371,37 @@ export const projectIl2cppMetadataView = (
         },
       ]),
     );
-  const { sections, images, types, methods, ...identity } = report;
+  const {
+    sections,
+    images,
+    types,
+    methods,
+    fields,
+    properties,
+    events,
+    parameters,
+    string_literals,
+    method_addresses,
+    return_types,
+    field_types,
+    parameter_types,
+    ...identity
+  } = report;
+  const allRows = {
+    sections,
+    images,
+    types,
+    methods,
+    fields,
+    properties,
+    events,
+    parameters,
+    string_literals,
+    method_addresses,
+    return_types,
+    field_types,
+    parameter_types,
+  };
   const shared = {
     parent_evidence_id: parent.evidenceId,
     parent_operation: "inspect_il2cpp_metadata" as const,
@@ -270,7 +409,9 @@ export const projectIl2cppMetadataView = (
     artifact: { path: report.artifact.path, sha256: report.artifact.sha256 },
     limitations: [...parent.limitations],
     unknowns: [
-      "Counts and page exhaustion cover retained metadata facts, not runtime loading or native code addresses.",
+      identity.binary === null
+        ? "Names come from unencrypted metadata only; native code addresses and runtime registration remain unknown."
+        : "Addresses come from static binary tables; runtime behavior and generic instance code remain unknown.",
       ...(parent.subject == null
         ? [
             "The parent has no recorded subject; its normalized artifact identity cannot be cross-checked against a subject digest.",
@@ -286,9 +427,9 @@ export const projectIl2cppMetadataView = (
       summary: { ...identity, counts },
       coverage: completeWithinViewCoverage(1, 1),
     });
-  const rows = { sections, images, types, methods }[view.collection];
+  const rows = allRows[view.collection];
   const matches = selection(view, report);
-  const fields =
+  const selectedFields =
     view.fields === undefined ? undefined : new Set<string>(view.fields);
   const items = [];
   let total = 0;
@@ -296,7 +437,7 @@ export const projectIl2cppMetadataView = (
     const row = rows[index]!;
     if (!matches(row, index)) continue;
     if (total >= view.offset && items.length < view.limit)
-      items.push(selectFields(row, index, fields));
+      items.push(selectFields(row, index, selectedFields));
     total++;
   }
   return ok({

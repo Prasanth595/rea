@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { digestSchema } from "../digests.js";
 import { localPathStringSchema } from "../localPath.js";
+import { canonicalBase64Schema } from "../stringPatterns.js";
 
 /** Unsigned little-endian signature observed at file offset zero. */
 export const IL2CPP_METADATA_MAGIC = 0xfab11baf;
@@ -40,8 +41,43 @@ export const IL2CPP_METADATA_SECTION_NAMES = [
   "exportedTypeDefinitions",
 ] as const;
 
-/** Decoded metadata versions; 29 and 31 use fixed 4-byte indices. */
-export const IL2CPP_METADATA_VERSIONS = [29, 31, 39] as const;
+/** Version 27 names for the four custom-attribute and indirect-call sections. */
+export const IL2CPP_METADATA_V27_SECTION_NAMES = [
+  ...IL2CPP_METADATA_SECTION_NAMES.slice(0, 24),
+  "attributesInfo",
+  "attributeTypes",
+  "unresolvedVirtualCallParameterTypes",
+  "unresolvedVirtualCallParameterRanges",
+  ...IL2CPP_METADATA_SECTION_NAMES.slice(28),
+] as const;
+
+/** Version 24 header: 32 (offset, byte size) pairs in this order. */
+export const IL2CPP_METADATA_V24_SECTION_NAMES = [
+  ...IL2CPP_METADATA_SECTION_NAMES.slice(0, 22),
+  "metadataUsageLists",
+  "metadataUsagePairs",
+  "fieldRefs",
+  "referencedAssemblies",
+  "attributesInfo",
+  "attributeTypes",
+  "unresolvedVirtualCallParameterTypes",
+  "unresolvedVirtualCallParameterRanges",
+  "windowsRuntimeTypeNames",
+  "exportedTypeDefinitions",
+] as const;
+
+/** Decoded metadata versions; all but 39 use fixed 4-byte indices. */
+export const IL2CPP_METADATA_VERSIONS = [24, 27, 29, 31, 39] as const;
+
+/** Header section names in order for one metadata version. */
+export const il2cppMetadataSectionNames = (
+  version: number,
+): readonly IL2cppMetadataSectionName[] =>
+  version === 24
+    ? IL2CPP_METADATA_V24_SECTION_NAMES
+    : version === 27
+      ? IL2CPP_METADATA_V27_SECTION_NAMES
+      : IL2CPP_METADATA_SECTION_NAMES;
 
 const count = z.number().int().nonnegative();
 /** Serialized metadata indices use -1 for an absent reference. */
@@ -59,10 +95,33 @@ export const inspectIl2cppMetadataInputSchema = z.strictObject({
     .describe(
       "summary (default) retains complete Evidence and returns identity and collection counts; complete returns every image, type and method row inline",
     ),
+  binary_path: localPathStringSchema
+    .optional()
+    .describe(
+      "Absolute path to the matching native IL2CPP binary (Mach-O GameAssembly.dylib or PE GameAssembly.dll) to link methods to code addresses; read only, never executed",
+    ),
+  binary_architecture: z
+    .enum(["arm64", "amd64"])
+    .optional()
+    .describe(
+      "Slice to read from a universal Mach-O binary_path; required for universal binaries and rejected otherwise",
+    ),
 });
 
+export type IL2cppMetadataSectionName = z.infer<
+  typeof il2cppMetadataSectionSchema
+>["name"];
+
 export const il2cppMetadataSectionSchema = z.strictObject({
-  name: z.enum(IL2CPP_METADATA_SECTION_NAMES),
+  name: z.enum([
+    ...IL2CPP_METADATA_SECTION_NAMES,
+    "attributesInfo",
+    "attributeTypes",
+    "unresolvedVirtualCallParameterTypes",
+    "unresolvedVirtualCallParameterRanges",
+    "metadataUsageLists",
+    "metadataUsagePairs",
+  ]),
   offset: count,
   size: count,
   /** Header-recorded entry count; versions 29 and 31 record none. */
@@ -98,6 +157,87 @@ export const il2cppMetadataMethodSchema = z.strictObject({
   ),
 });
 
+/** Field, property or event name and the type whose member range holds it. */
+export const il2cppMetadataMemberSchema = z.strictObject({
+  name: z.string(),
+  /** -1 when no type range claims the row. */
+  declaring_type: optionalIndex,
+});
+
+/** Parameter name and the method whose parameter range holds it. */
+export const il2cppMetadataParameterSchema = z.strictObject({
+  name: z.string(),
+  /** -1 when no method range claims the row. */
+  method: optionalIndex,
+});
+
+/** Managed string literal; undecodable UTF-8 keeps its exact bytes instead. */
+export const il2cppMetadataStringLiteralSchema = z.strictObject({
+  value: z.string().nullable(),
+  value_base64: canonicalBase64Schema.nullable(),
+});
+
+/** Hexadecimal virtual address or offset, such as 0x153584. */
+const hexAddress = z.string().regex(/^0x[0-9a-f]+$/u);
+
+/**
+ * How the binary answered for one method: `code` has an address, `no-body` is a
+ * module slot that records no code (abstract, extern or generic methods), and
+ * `unknown` means no code-generation module claims the method, so the binary
+ * was not asked and its code remains unknown.
+ */
+export const IL2CPP_METHOD_ADDRESS_STATES = [
+  "code",
+  "no-body",
+  "unknown",
+] as const;
+
+/** Native code of one method: virtual address and image-base-relative RVA. */
+export const il2cppMethodAddressSchema = z.strictObject({
+  state: z.enum(IL2CPP_METHOD_ADDRESS_STATES),
+  /** Null unless state is code. */
+  address: hexAddress.nullable(),
+  rva: hexAddress.nullable(),
+});
+
+/** Index into the binary Il2CppType table and its C#-like display name. */
+export const il2cppTypeReferenceSchema = z.strictObject({
+  type: optionalIndex,
+  /** Null for type index -1, and for every row of a version 27 report. */
+  name: z.string().nullable(),
+});
+
+/** Code-generation module record located for one metadata image. */
+export const il2cppCodeGenModuleSchema = z.strictObject({
+  image: count,
+  address: hexAddress,
+  method_pointer_count: count,
+});
+
+/** Identity and registration facts of the linked native binary. */
+export const il2cppBinaryLinkSchema = z.strictObject({
+  artifact: z.strictObject({
+    path: localPathStringSchema,
+    sha256: digestSchema,
+    bytes: count,
+  }),
+  format: z.enum(["elf", "macho", "pe"]),
+  architecture: z.string(),
+  image_base: hexAddress,
+  /**
+   * CodeRegistration's codeGenModulesCount field, followed by the module array
+   * pointer; null when the build keeps no static CodeRegistration and the array
+   * was found through the instruction that loads it.
+   */
+  code_gen_modules_field: hexAddress.nullable(),
+  /** The code-generation module pointer array. */
+  code_gen_modules_array: hexAddress,
+  code_gen_modules: z.array(il2cppCodeGenModuleSchema),
+  /** MetadataRegistration's typesCount field, followed by the types pointer. */
+  types_field: hexAddress,
+  types_count: count,
+});
+
 /** Unrefined report fields, shared with projections that omit row collections. */
 export const il2cppMetadataObjectSchema = z.strictObject({
   artifact: z.strictObject({
@@ -120,20 +260,61 @@ export const il2cppMetadataObjectSchema = z.strictObject({
       "fixed-width-version",
     ]),
   }),
-  sections: z
-    .array(il2cppMetadataSectionSchema)
-    .length(IL2CPP_METADATA_SECTION_NAMES.length),
+  sections: z.array(il2cppMetadataSectionSchema),
   images: z.array(il2cppMetadataImageSchema),
   types: z.array(il2cppMetadataTypeSchema),
   methods: z.array(il2cppMetadataMethodSchema),
+  fields: z.array(il2cppMetadataMemberSchema),
+  properties: z.array(il2cppMetadataMemberSchema),
+  events: z.array(il2cppMetadataMemberSchema),
+  parameters: z.array(il2cppMetadataParameterSchema),
+  string_literals: z.array(il2cppMetadataStringLiteralSchema),
+  /** Null unless binary_path was selected. */
+  binary: il2cppBinaryLinkSchema.nullable(),
+  /** One row per method index when binary is linked, otherwise empty. */
+  method_addresses: z.array(il2cppMethodAddressSchema),
+  /** Per method, field and parameter index when binary is linked, otherwise empty. */
+  return_types: z.array(il2cppTypeReferenceSchema),
+  field_types: z.array(il2cppTypeReferenceSchema),
+  parameter_types: z.array(il2cppTypeReferenceSchema),
   limitations: z.array(z.string()),
 });
 
 /** Complete name and count inventory of one decoded global-metadata.dat file. */
 export const il2cppMetadataSchema = il2cppMetadataObjectSchema.superRefine(
   (report, context) => {
+    const names = il2cppMetadataSectionNames(report.metadata_version);
+    if (report.sections.length !== names.length)
+      context.addIssue({
+        code: "custom",
+        path: ["sections"],
+        message: `Version ${report.metadata_version} headers have ${names.length} sections.`,
+      });
+    for (const [collection, rows] of [
+      ["method_addresses", report.methods],
+      ["return_types", report.methods],
+      ["field_types", report.fields],
+      ["parameter_types", report.parameters],
+    ] as const) {
+      const expected = report.binary === null ? 0 : rows.length;
+      if (report[collection].length !== expected)
+        context.addIssue({
+          code: "custom",
+          path: [collection],
+          message: `A linked binary needs one ${collection} row per metadata row; none without one.`,
+        });
+    }
+    report.method_addresses.forEach((row, index) => {
+      if ((row.state === "code") !== (row.address !== null && row.rva !== null))
+        context.addIssue({
+          code: "custom",
+          path: ["method_addresses", index],
+          message:
+            "Only a code row carries an address and RVA; both are then present.",
+        });
+    });
     report.sections.forEach((section, index) => {
-      if (section.name !== IL2CPP_METADATA_SECTION_NAMES[index])
+      if (section.name !== names[index])
         context.addIssue({
           code: "custom",
           path: ["sections", index, "name"],

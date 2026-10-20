@@ -61,6 +61,32 @@ export class Il2cppMetadataService {
           },
         ]),
       );
+    if (
+      input.data.binary_path !== undefined &&
+      !isAbsolute(input.data.binary_path)
+    )
+      return err(
+        new AnalysisInputError(OPERATION, undefined, [
+          {
+            path: ["binary_path"],
+            reason: "invalid_format",
+            message: "Expected an absolute filesystem path on this host.",
+          },
+        ]),
+      );
+    if (
+      input.data.binary_architecture !== undefined &&
+      input.data.binary_path === undefined
+    )
+      return err(
+        new AnalysisInputError(OPERATION, undefined, [
+          {
+            path: ["binary_architecture"],
+            reason: "invalid_value",
+            message: "binary_architecture selects a slice of binary_path.",
+          },
+        ]),
+      );
     const { detail, ...providerInput } = input.data;
     if (detail === "summary") {
       const ready = requireAnalysisViewRetention(OPERATION, retention);
@@ -69,7 +95,12 @@ export class Il2cppMetadataService {
     const inspected = await this.provider.inspect(providerInput, options);
     if (!inspected.ok) return inspected;
     const report = il2cppMetadataSchema.safeParse(inspected.value);
-    if (!report.success || report.data.artifact.path !== providerInput.path)
+    if (
+      !report.success ||
+      report.data.artifact.path !== providerInput.path ||
+      (report.data.binary?.artifact.path ?? undefined) !==
+        providerInput.binary_path
+    )
       return err(
         new AnalysisOutputError(
           OPERATION,
@@ -86,12 +117,24 @@ export class Il2cppMetadataService {
       this.provider.identity,
       {
         operation: OPERATION,
-        parameters: providerInput,
+        parameters: Object.fromEntries(
+          Object.entries(providerInput).filter(
+            ([, value]) => value !== undefined,
+          ),
+        ) as Record<string, string>,
         result: value,
         confidence: "observed",
         limitations: value.limitations,
         locations: [
           { kind: "artifact-path", path: value.artifact.path },
+          ...(value.binary === null
+            ? []
+            : [
+                {
+                  kind: "artifact-path" as const,
+                  path: value.binary.artifact.path,
+                },
+              ]),
           ...value.sections
             .filter(
               ({ name, size }) =>

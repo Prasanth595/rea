@@ -8,6 +8,10 @@ import {
   AnalysisResourceConstraintError,
 } from "../../../src/domain/analysisErrorCore.js";
 import { Il2cppMetadataProvider } from "../../../src/il2cpp/Il2cppMetadataProvider.js";
+import {
+  createElfFixture,
+  createIl2cppBinaryFixture,
+} from "../../fixtures/il2cpp/binary.js";
 import { createIl2cppMetadataFixture } from "../../fixtures/il2cpp/metadata.js";
 import { createTestTempDirectory } from "../../fixtures/temporaryDirectory.js";
 
@@ -299,6 +303,75 @@ it("retains the exact empty source observation without claiming a decoded invent
         },
         inventory_status: "not-returned-as-complete",
       },
+    });
+  } finally {
+    await provider.close();
+  }
+});
+
+it("keeps the metadata source observation when the selected binary does not link", async () => {
+  const root = await createTestTempDirectory("rea-il2cpp-binary-failure-");
+  const path = join(root, "global-metadata.dat");
+  const binaryPath = join(root, "GameAssembly.dll");
+  const fixture = createIl2cppMetadataFixture();
+  await writeFile(path, fixture.bytes);
+  await writeFile(binaryPath, Buffer.from("not a native image"));
+  const provider = new Il2cppMetadataProvider();
+  try {
+    const result = await provider.inspect({ path, binary_path: binaryPath });
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("Expected the binary to be refused");
+    expect(result.error.partialObservation).toMatchObject({
+      operation: "observe_il2cpp_metadata_source",
+      normalized_result: {
+        artifact: {
+          path,
+          sha256: createHash("sha256").update(fixture.bytes).digest("hex"),
+          bytes: fixture.bytes.length,
+        },
+        inventory_status: "not-returned-as-complete",
+      },
+    });
+  } finally {
+    await provider.close();
+  }
+});
+
+it("accepts cancellation between binary linking batches and keeps the metadata source", async () => {
+  const root = await createTestTempDirectory("rea-il2cpp-link-cancel-");
+  const path = join(root, "global-metadata.dat");
+  const binaryPath = join(root, "libil2cpp.so");
+  const fixture = createIl2cppMetadataFixture();
+  await writeFile(path, fixture.bytes);
+  await writeFile(binaryPath, createElfFixture(createIl2cppBinaryFixture()));
+  // Yields taken by the metadata decode alone; later ones belong to linking.
+  let decodeYields = 0;
+  const counting = new Il2cppMetadataProvider(undefined, async () => {
+    decodeYields++;
+  });
+  try {
+    expect((await counting.inspect({ path })).ok).toBe(true);
+  } finally {
+    await counting.close();
+  }
+  const controller = new AbortController();
+  const reason = new Error("stop linking");
+  let yields = 0;
+  const provider = new Il2cppMetadataProvider(undefined, async () => {
+    if (++yields === decodeYields + 2) controller.abort(reason);
+  });
+  try {
+    const result = await provider.inspect(
+      { path, binary_path: binaryPath },
+      { signal: controller.signal },
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("Expected cancellation");
+    expect(result.error).toBeInstanceOf(AnalysisCancelledError);
+    expect(yields).toBe(decodeYields + 2);
+    expect(result.error.partialObservation).toMatchObject({
+      operation: "observe_il2cpp_metadata_source",
+      normalized_result: { artifact: { path } },
     });
   } finally {
     await provider.close();

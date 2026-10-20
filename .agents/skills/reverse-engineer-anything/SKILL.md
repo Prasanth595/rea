@@ -173,7 +173,7 @@ explicit path or endpoint and do not need it.
   `inspect_il2cpp_metadata` with the explicit local file; MCP defaults to compact
   counts. Query sections, images, types or methods through `inspect_analysis_view`
   with the returned `parent_evidence_id`, using exact filters, batch indices and
-  selected fields. Versions 29, 31 and 39; no Unity, IL2CPP
+  selected fields. Versions 24, 27, 29, 31 and 39; no Unity, IL2CPP
   binary or disassembler is run. Unrecognized magic (possibly encrypted) and
   other versions are unsupported. Names do not establish native code addresses
   or runtime behavior. See the
