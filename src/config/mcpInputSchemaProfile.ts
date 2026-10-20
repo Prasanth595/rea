@@ -21,7 +21,7 @@ export const compactPresentationForMcpInputSchemaProfile = (
     : undefined;
 
 const profileConstraint =
-  'REA_MCP_INPUT_SCHEMA_PROFILE must be "full" (default) or "compact". The compact profile advertises bounded input schemas with fewer nested annotations for providers with schema compatibility constraints.';
+  'REA_MCP_INPUT_SCHEMA_PROFILE must be "full" (default) or "compact". Use compact for providers with schema compatibility constraints, including Moonshot size caps (#1484) and WorkBuddy/CodeBuddy-backed gateways that reject the full catalog with HTTP 400 code 11133 (#2999).';
 
 export type McpInputSchemaProfile = z.infer<typeof mcpInputSchemaProfileSchema>;
 
