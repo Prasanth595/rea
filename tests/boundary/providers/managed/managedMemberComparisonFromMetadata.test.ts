@@ -287,6 +287,13 @@ describe("managed member comparison floating-point constants", () => {
           status: "present",
           anchors: [
             { il_offset: 0, opcode, operand_kind: "constant", operand },
+            // ldc.r4 spans 5 bytes and ldc.r8 spans 9 before the ret.
+            {
+              il_offset: opcode === "ldc.r4" ? 5 : 9,
+              opcode: "ret",
+              operand_kind: "none",
+              operand: null,
+            },
           ],
         });
       }

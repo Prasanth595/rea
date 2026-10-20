@@ -121,14 +121,17 @@ export const methodBody = (
     for (const instruction of decoded.parsed)
       opcodeCounts[instruction.opcode] =
         (opcodeCounts[instruction.opcode] ?? 0) + 1;
-    const anchors = decoded.parsed
-      .filter((instruction) => instruction.operandKind !== "none")
-      .map((instruction) => ({
-        il_offset: instruction.offset,
-        opcode: instruction.opcode,
-        operand_kind: instruction.operandKind,
-        operand: instruction.operand,
-      }));
+    // Anchors cover every decoded instruction, including operand-free ones:
+    // a branch's comparison constant often lives in the opcode itself
+    // (ldc.i4.N), so dropping `none` instructions would hide that value from
+    // consumers. This matches opcode_counts and the normalized hash above,
+    // which already span the complete decode.
+    const anchors = decoded.parsed.map((instruction) => ({
+      il_offset: instruction.offset,
+      opcode: instruction.opcode,
+      operand_kind: instruction.operandKind,
+      operand: instruction.operand,
+    }));
     const normalized = Buffer.from(
       JSON.stringify(
         decoded.parsed.map(({ opcode, operandKind, operand }) => [
