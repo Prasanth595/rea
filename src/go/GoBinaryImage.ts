@@ -12,7 +12,7 @@ import {
   classifyFatContainerIdentity,
   readFatContainerHeader,
 } from "../domain/apple/machoContainer.js";
-import { readGoElfImage } from "./GoElfImage.js";
+import { readGoElfImage, type GoElfReadPurpose } from "./GoElfImage.js";
 import { readGoMachoImage } from "./GoMachoImage.js";
 import { readGoPeImage } from "./GoPeImage.js";
 
@@ -207,9 +207,12 @@ interface LocatedString {
 }
 
 /** Identify an ELF, PE, or thin Mach-O image and its named file sections. */
-export const readGoBinaryContainer = (bytes: Buffer): GoBinaryContainer => {
+export const readGoBinaryContainer = (
+  bytes: Buffer,
+  elfPurpose: GoElfReadPurpose = "build-info",
+): GoBinaryContainer => {
   if (bytes.subarray(0, 4).equals(Buffer.from([0x7f, 0x45, 0x4c, 0x46])))
-    return readGoElfImage(bytes);
+    return readGoElfImage(bytes, elfPurpose);
   if (bytes.subarray(0, 2).equals(Buffer.from("MZ")))
     return readGoPeImage(bytes);
   if (bytes.length >= 4) {

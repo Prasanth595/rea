@@ -10,8 +10,14 @@ import {
 } from "./GoBinaryContainer.js";
 import { readElfFixedHeader } from "../domain/elfFixedHeader.js";
 
-/** Read ELF build-info sections and file-backed program mappings. */
-export const readGoElfImage = (bytes: Buffer): GoBinaryContainer => {
+/** Select ELF container facts alone or also admit Go build-info search ranges. */
+export type GoElfReadPurpose = "sections" | "build-info";
+
+/** Read ELF sections and mappings; validate Go metadata only when requested. */
+export const readGoElfImage = (
+  bytes: Buffer,
+  purpose: GoElfReadPurpose = "build-info",
+): GoBinaryContainer => {
   const fixedHeader = readElfFixedHeader(bytes);
   if (!fixedHeader.ok)
     throw new GoBinaryFormatFailure("malformed", fixedHeader.error);
@@ -170,6 +176,7 @@ export const readGoElfImage = (bytes: Buffer): GoBinaryContainer => {
           wide,
           header: offset,
         });
+        if (purpose === "sections") continue;
         // Comparing the complete fixed name avoids quadratic scans through malicious string tables.
         const expectedName = Buffer.from(".go.buildinfo\0");
         if (

@@ -48,7 +48,7 @@ export const readRustBinaryImage = (bytes: Buffer): RustBinaryImage => {
 
 const readContainer = (bytes: Buffer) => {
   try {
-    return readGoBinaryContainer(bytes);
+    return readGoBinaryContainer(bytes, "sections");
   } catch (cause) {
     if (cause instanceof GoBinaryFormatFailure)
       throw new RustAuditableFormatFailure(cause.kind, cause.message, {

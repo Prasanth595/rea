@@ -49,6 +49,24 @@ export const createRustImage = (options: {
   return bytes;
 };
 
+/** ELF dependency fixture with an unrelated, nonallocated Go-named section. */
+export const createRustElfWithGoSection = (): Buffer => {
+  const bytes = createRustImage({ format: "elf" });
+  const namesSize = Number(bytes.readBigUInt64LE(320 + 32));
+  const name = Buffer.from(".go.buildinfo\0");
+  name.copy(bytes, 768 + namesSize);
+  bytes.writeBigUInt64LE(BigInt(namesSize + name.length), 320 + 32);
+  bytes.writeUInt16LE(5, 60);
+  const section = 512;
+  bytes.writeUInt32LE(namesSize, section);
+  bytes.writeUInt32LE(1, section + 4);
+  bytes.writeBigUInt64LE(3072n, section + 24);
+  bytes.writeBigUInt64LE(16n, section + 32);
+  bytes.writeBigUInt64LE(1n, section + 48);
+  Buffer.from("additional data\0").copy(bytes, 3072);
+  return bytes;
+};
+
 interface RustImageWrite {
   readonly bytes: Buffer;
   readonly little: (offset: number, value: number, width: 16 | 32 | 64) => void;

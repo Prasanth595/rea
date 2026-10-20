@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { dirname, join, relative, sep } from "node:path";
+import { dirname, join, relative, sep, toNamespacedPath } from "node:path";
 import { z } from "zod";
 
 const require = createRequire(import.meta.url);
@@ -132,7 +132,12 @@ try {
     // ambiguous. Normalize absolute producer paths once for portable reports.
     for (const clone of report.duplicates)
       for (const file of [clone.firstFile, clone.secondFile])
-        file.name = relative(process.cwd(), file.name).split(sep).join("/");
+        file.name = relative(
+          toNamespacedPath(process.cwd()),
+          toNamespacedPath(file.name),
+        )
+          .split(sep)
+          .join("/");
     // Record the actual checker result, including caller-selected thresholds.
     report.reaCheck = { exitCode: result.status };
     await writeFile(reportPath, JSON.stringify(report, null, 2));
