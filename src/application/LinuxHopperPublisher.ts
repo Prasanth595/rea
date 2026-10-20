@@ -550,7 +550,7 @@ export class LinuxHopperPublisher {
         return err(
           new HopperReleaseError(
             "unsupported_hopper_build",
-            "The selected Hopper launcher does not match an authenticated cached release or the official current Linux demo.",
+            `The selected Hopper launcher does not match an authenticated cached release or the current official Linux demo (${selected.value.version}). Run rea setup --install-hopper to install and retain the current authenticated build, or retain evidence for your existing build by running rea setup first.`,
           ),
         );
       const verified = await this.#withTemporary(
