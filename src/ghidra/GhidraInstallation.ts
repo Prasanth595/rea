@@ -7,7 +7,7 @@ import {
   type GhidraJavaProbeFailure,
   type GhidraJavaProbeOptions,
 } from "./GhidraJavaProbe.js";
-import { ok, type Result } from "../domain/result.js";
+import { err, ok, type Result } from "../domain/result.js";
 import { projectAnalysisError } from "../domain/analysisErrorProjection.js";
 import { readGhidraExecutableHeader } from "./GhidraExecutableHeader.js";
 import { snapshotEnvironment } from "../process/snapshotEnvironment.js";
@@ -498,60 +498,86 @@ const installationCoordinates = async (
       nativeDecompilerHeader.error.cleanupIncomplete)
   )
     throw nativeDecompilerHeader.error;
-  const javaCommand = (() => {
-    if (options.javaHome !== undefined)
-      return path.join(
+  const javaEnvironment = ghidraJavaEnvironment(
+    options.javaHome,
+    options.environment,
+    platform,
+  );
+  const probeJava = async (
+    command: string,
+  ): Promise<Result<GhidraJavaObservation, GhidraJavaProbeFailure>> => {
+    const probe = await host.probeJava(command, javaEnvironment, {
+      resourceOwner: options.resourceOwner,
+      ...(options.signal === undefined ? {} : { signal: options.signal }),
+    });
+    if (probe.ok) return probe;
+    if (probe.error instanceof AnalysisError) throw probe.error;
+    return err(probe.error);
+  };
+  // Prefer the Homebrew prefix matching the process architecture.
+  const homebrewJavaCandidates = (): readonly string[] =>
+    (architecture === "arm64"
+      ? ["/opt/homebrew", "/usr/local"]
+      : ["/usr/local", "/opt/homebrew"]
+    )
+      .map((prefix) =>
+        path.join(
+          prefix,
+          "opt/openjdk/libexec/openjdk.jdk/Contents/Home/bin/java",
+        ),
+      )
+      .filter((candidate) => host.executable(candidate));
+  const selectJava = async (): Promise<{
+    readonly command: string;
+    readonly probe:
+      | Result<GhidraJavaObservation, GhidraJavaProbeFailure>
+      | undefined;
+  }> => {
+    if (options.javaHome !== undefined) {
+      const command = path.join(
         options.javaHome,
         "bin",
         platform === "win32" ? "java.exe" : "java",
       );
-    if (platform !== "darwin")
-      return platform === "win32" ? "java.exe" : "java";
+      // Relative JAVA_HOME is refused by configuration validation without execution.
+      return {
+        command,
+        probe: path.isAbsolute(options.javaHome)
+          ? await probeJava(command)
+          : undefined,
+      };
+    }
+    if (platform !== "darwin") {
+      const command = platform === "win32" ? "java.exe" : "java";
+      return { command, probe: await probeJava(command) };
+    }
     // Check the caller's PATH, never a file named java in the working directory.
     const javaOnPath = options.environment.PATH?.split(":").some(
       (directory) =>
         path.isAbsolute(directory) &&
         host.executable(path.join(directory, "java")),
     );
-    if (javaOnPath) return "java";
-    // Prefer the Homebrew prefix matching the process architecture.
-    const prefixes =
-      architecture === "arm64"
-        ? ["/opt/homebrew", "/usr/local"]
-        : ["/usr/local", "/opt/homebrew"];
-    return (
-      prefixes
-        .map((prefix) =>
-          path.join(
-            prefix,
-            "opt/openjdk/libexec/openjdk.jdk/Contents/Home/bin/java",
-          ),
-        )
-        .find((candidate) => host.executable(candidate)) ?? "java"
-    );
-  })();
-  // Relative JAVA_HOME is refused by configuration validation without execution.
-  const javaProbe =
-    options.javaHome === undefined || path.isAbsolute(options.javaHome)
-      ? await host.probeJava(
-          javaCommand,
-          ghidraJavaEnvironment(
-            options.javaHome,
-            options.environment,
-            platform,
-          ),
-          {
-            resourceOwner: options.resourceOwner,
-            ...(options.signal === undefined ? {} : { signal: options.signal }),
-          },
-        )
-      : undefined;
-  if (
-    javaProbe !== undefined &&
-    !javaProbe.ok &&
-    javaProbe.error instanceof AnalysisError
-  )
-    throw javaProbe.error;
+    if (!javaOnPath) {
+      const command = homebrewJavaCandidates()[0] ?? "java";
+      return { command, probe: await probeJava(command) };
+    }
+    const pathProbe = await probeJava("java");
+    // Every Mac has /usr/bin/java. Without a registered JDK it is Apple's
+    // launcher stub, which exits nonzero; a keg-only Homebrew JDK must still
+    // be found then (#4657). A PATH java that runs keeps priority.
+    if (
+      pathProbe.ok ||
+      (pathProbe.error.code !== "runtime_missing" &&
+        pathProbe.error.code !== "runtime_unavailable")
+    )
+      return { command: "java", probe: pathProbe };
+    for (const candidate of homebrewJavaCandidates()) {
+      const probe = await probeJava(candidate);
+      if (probe.ok) return { command: candidate, probe };
+    }
+    return { command: "java", probe: pathProbe };
+  };
+  const { command: javaCommand, probe: javaProbe } = await selectJava();
   return {
     installDir,
     applicationPropertiesPath,
@@ -565,11 +591,7 @@ const installationCoordinates = async (
     javaCommand,
     java: javaProbe?.ok === true ? javaProbe.value : undefined,
     javaProbeFailure:
-      javaProbe !== undefined &&
-      !javaProbe.ok &&
-      !(javaProbe.error instanceof AnalysisError)
-        ? javaProbe.error
-        : undefined,
+      javaProbe !== undefined && !javaProbe.ok ? javaProbe.error : undefined,
   };
 };
 
